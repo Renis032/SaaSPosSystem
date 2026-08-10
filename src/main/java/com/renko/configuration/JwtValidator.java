@@ -34,7 +34,7 @@ public class JwtValidator extends OncePerRequestFilter
 
         // Remove the "Bearer " prefix because only the actual JWT token is needed for validation
         // Example: "Bearer eyJhbGciOi..." -> "eyJhbGciOi...
-        if(jwt != null)
+        if(jwt != null && jwt.startsWith(BEARER_PREFIX))
         {
             jwt = jwt.substring(BEARER_PREFIX.length());
             try
@@ -73,8 +73,9 @@ public class JwtValidator extends OncePerRequestFilter
             {
                 throw new BadCredentialsException("Invalid JWT");
             }
-            // Continue the request through the remaining security filters and eventually the controller
-            filterChain.doFilter(request, response);
         }
+
+        // Always continue — login/signup have no JWT header and must still reach the controller
+        filterChain.doFilter(request, response);
     }
 }
