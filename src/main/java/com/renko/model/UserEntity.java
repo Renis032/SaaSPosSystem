@@ -13,7 +13,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor // Generates an empty constructor
 @AllArgsConstructor // Generates a constructor with all properties the class has
 @EqualsAndHashCode // Generates equals and hashcode functions
-public class User
+public class UserEntity
 {
     @Id // Key
     @GeneratedValue(strategy = GenerationType.AUTO)
@@ -33,6 +33,9 @@ public class User
 
     @Column(nullable = false)
     private UserRole role;
+
+    @ManyToOne
+    private StoreEntity storeEntity;
 
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

@@ -68,6 +68,11 @@ public class JwtValidator extends OncePerRequestFilter
                 // Store the authenticated user in Spring's SecurityContext
                 // Controllers and services can now access the logged-in user
                 SecurityContextHolder.getContext().setAuthentication(auth);
+
+                System.out.println("JWT EMAIL: " + email);
+                System.out.println("JWT AUTHORITIES: " + auths);
+                System.out.println("AUTHENTICATED: " +
+                        SecurityContextHolder.getContext().getAuthentication().isAuthenticated());
             }
             catch(Exception e)
             {

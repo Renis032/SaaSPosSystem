@@ -4,14 +4,13 @@ import com.renko.configuration.JwtProvider;
 import com.renko.domain.UserRole;
 import com.renko.exceptions.UserException;
 import com.renko.mapper.UserMapper;
-import com.renko.model.User;
+import com.renko.model.UserEntity;
 import com.renko.payload.dto.UserDto;
 import com.renko.payload.response.AuthResponse;
 import com.renko.repository.UserRepository;
 import com.renko.service.AuthService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.config.core.GrantedAuthorityDefaults;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -35,8 +34,8 @@ public class AuthServiceImpl implements AuthService
     @Override
     public AuthResponse signUp(UserDto userDto) throws UserException
     {
-        User user = userRepository.findByEmail(userDto.getEmail());
-        if(user != null)
+        UserEntity userEntity = userRepository.findByEmail(userDto.getEmail());
+        if(userEntity != null)
         {
             throw new UserException("Email is already registered!");
         }
@@ -46,18 +45,18 @@ public class AuthServiceImpl implements AuthService
             throw new UserException("Only one ADMIN allowed!");
         }
 
-        User newUser = new User();
-        newUser.setEmail(userDto.getEmail());
-        newUser.setPassword(passwordEncoder.encode(userDto.getPassword()));
-        newUser.setRole(userDto.getRole());
-        newUser.setPhoneNumber(userDto.getPhoneNumber());
-        newUser.setFullName(userDto.getFullName());
+        UserEntity newUserEntity = new UserEntity();
+        newUserEntity.setEmail(userDto.getEmail());
+        newUserEntity.setPassword(passwordEncoder.encode(userDto.getPassword()));
+        newUserEntity.setRole(userDto.getRole());
+        newUserEntity.setPhoneNumber(userDto.getPhoneNumber());
+        newUserEntity.setFullName(userDto.getFullName());
 
-        newUser.setUpdatedAt(LocalDateTime.now());
+        newUserEntity.setUpdatedAt(LocalDateTime.now());
 
         // Save the User entity to the database
         // Spring Data JPA generates the SQL required to insert the user
-        User savedUser = userRepository.save(newUser);
+        UserEntity savedUserEntity = userRepository.save(newUserEntity);
 
         // Create an Authentication object representing the newly registered user
         // At this point this does NOT mean that the user has been fully authenticated
@@ -80,7 +79,7 @@ public class AuthServiceImpl implements AuthService
 
         // Convert the database entity into a DTO before sending it to the client
         // DTOs prevent us from exposing the database entity directly through the API
-        authResponse.setUser(UserMapper.toDto(savedUser));
+        authResponse.setUser(UserMapper.toDto(savedUserEntity));
 
         return authResponse;
     }
@@ -99,14 +98,14 @@ public class AuthServiceImpl implements AuthService
         String role = authorities.iterator().next().getAuthority();
         String jwt = jwtProvider.generateToken(authentication);
 
-        User user = userRepository.findByEmail(email);
-        user.setLastLoginAt(LocalDateTime.now());
-        userRepository.save(user);
+        UserEntity userEntity = userRepository.findByEmail(email);
+        userEntity.setLastLoginAt(LocalDateTime.now());
+        userRepository.save(userEntity);
 
         AuthResponse authResponse = new AuthResponse();
         authResponse.setJwt(jwt);
         authResponse.setMessage("Login successfully!");
-        authResponse.setUser(UserMapper.toDto(user));
+        authResponse.setUser(UserMapper.toDto(userEntity));
 
         return authResponse;
     }

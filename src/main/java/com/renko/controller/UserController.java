@@ -2,7 +2,7 @@ package com.renko.controller;
 
 import com.renko.exceptions.UserException;
 import com.renko.mapper.UserMapper;
-import com.renko.model.User;
+import com.renko.model.UserEntity;
 import com.renko.payload.dto.UserDto;
 import com.renko.service.UserService;
 import lombok.RequiredArgsConstructor;
@@ -19,16 +19,16 @@ public class UserController
     @GetMapping("/profile")
     public ResponseEntity<UserDto> getUserProfile(@RequestHeader("Authorization") String jwt) throws UserException
     {
-        User user = userService.getUserFromJwtToken(jwt);
-        return ResponseEntity.ok(UserMapper.toDto(user));
+        UserEntity userEntity = userService.getUserFromJwtToken(jwt);
+        return ResponseEntity.ok(UserMapper.toDto(userEntity));
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<UserDto> getUserById(@RequestHeader("Authorization") String jwt,
                                                @PathVariable Long id) throws UserException, Exception
     {
-        User user = userService.getUserById(id);
-        return ResponseEntity.ok(UserMapper.toDto(user));
+        UserEntity userEntity = userService.getUserById(id);
+        return ResponseEntity.ok(UserMapper.toDto(userEntity));
     }
 
 }

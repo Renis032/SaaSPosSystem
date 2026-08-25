@@ -1,15 +1,15 @@
 package com.renko.service;
 
 import com.renko.exceptions.UserException;
-import com.renko.model.User;
+import com.renko.model.UserEntity;
 
 import java.util.List;
 
 public interface UserService
 {
-    User getUserFromJwtToken(String token) throws UserException;
-    User getCurrentUser() throws UserException;
-    User getUserByEmail(String email) throws UserException;
-    User getUserById(Long id) throws UserException, Exception;
-    List<User> getAllUsers();
+    UserEntity getUserFromJwtToken(String token) throws UserException;
+    UserEntity getCurrentUser() throws UserException;
+    UserEntity getUserByEmail(String email) throws UserException;
+    UserEntity getUserById(Long id) throws UserException, Exception;
+    List<UserEntity> getAllUsers();
 }

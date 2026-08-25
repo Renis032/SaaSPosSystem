@@ -2,7 +2,7 @@ package com.renko.service.impl;
 
 import com.renko.configuration.JwtProvider;
 import com.renko.exceptions.UserException;
-import com.renko.model.User;
+import com.renko.model.UserEntity;
 import com.renko.repository.UserRepository;
 import com.renko.service.UserService;
 import lombok.RequiredArgsConstructor;
@@ -19,46 +19,46 @@ public class UserServiceImpl implements UserService
     private final JwtProvider jwtProvider;
 
     @Override
-    public User getUserFromJwtToken(String token) throws UserException
+    public UserEntity getUserFromJwtToken(String token) throws UserException
     {
         String email = jwtProvider.getEmailFromToken(token);
-        User user = userRepository.findByEmail(email);
+        UserEntity userEntity = userRepository.findByEmail(email);
 
-        if(user == null)
+        if(userEntity == null)
         {
             throw new UserException("Invalid token!");
         }
 
-        return user;
+        return userEntity;
     }
 
     @Override
-    public User getCurrentUser() throws UserException
+    public UserEntity getCurrentUser() throws UserException
     {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
-        User currentUser = userRepository.findByEmail(email);
-        if(currentUser == null)
+        UserEntity currentUserEntity = userRepository.findByEmail(email);
+        if(currentUserEntity == null)
         {
             throw new UserException("User not found!");
         }
 
-        return currentUser;
+        return currentUserEntity;
     }
 
     @Override
-    public User getUserByEmail(String email) throws UserException
+    public UserEntity getUserByEmail(String email) throws UserException
     {
-        User user = userRepository.findByEmail(email);
-        if(user == null)
+        UserEntity userEntity = userRepository.findByEmail(email);
+        if(userEntity == null)
         {
             throw new UserException("User not found!");
         }
 
-        return user;
+        return userEntity;
     }
 
     @Override
-    public User getUserById(Long id) throws UserException, Exception
+    public UserEntity getUserById(Long id) throws UserException, Exception
     {
         return userRepository.findById(id).orElseThrow(() ->
         {
@@ -67,7 +67,7 @@ public class UserServiceImpl implements UserService
     }
 
     @Override
-    public List<User> getAllUsers()
+    public List<UserEntity> getAllUsers()
     {
         return userRepository.findAll();
     }

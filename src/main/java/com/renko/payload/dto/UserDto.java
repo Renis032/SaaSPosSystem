@@ -1,7 +1,7 @@
 package com.renko.payload.dto;
 
 import com.renko.domain.UserRole;
-import com.renko.model.User;
+import com.renko.model.UserEntity;
 import lombok.Data;
 
 import java.time.LocalDateTime;
@@ -24,15 +24,15 @@ public class UserDto
     private LocalDateTime updatedAt;
     private LocalDateTime lastLoginAt;
 
-    public void setFromUser(User user)
+    public void setFromUser(UserEntity userEntity)
     {
-        id = user.getId();
-        fullName = user.getFullName();
-        email = user.getEmail();
-        phoneNumber = user.getPhoneNumber();
-        role = user.getRole();
-        createdAt = user.getCreatedAt();
-        updatedAt = user.getUpdatedAt();
-        lastLoginAt = user.getLastLoginAt();
+        id = userEntity.getId();
+        fullName = userEntity.getFullName();
+        email = userEntity.getEmail();
+        phoneNumber = userEntity.getPhoneNumber();
+        role = userEntity.getRole();
+        createdAt = userEntity.getCreatedAt();
+        updatedAt = userEntity.getUpdatedAt();
+        lastLoginAt = userEntity.getLastLoginAt();
     }
 }
