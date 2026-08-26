@@ -1,6 +1,6 @@
 package com.renko.service.impl;
 
-import com.renko.model.UserEntity;
+import com.renko.entities.UserEntity;
 import com.renko.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.GrantedAuthority;

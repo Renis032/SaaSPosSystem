@@ -1,7 +1,7 @@
 package com.renko.service;
 
 import com.renko.exceptions.UserException;
-import com.renko.model.UserEntity;
+import com.renko.entities.UserEntity;
 
 import java.util.List;
 
@@ -12,4 +12,8 @@ public interface UserService
     UserEntity getUserByEmail(String email) throws UserException;
     UserEntity getUserById(Long id) throws UserException, Exception;
     List<UserEntity> getAllUsers();
+
+    void deleteById(Long id);
+
+    UserEntity getAdminUser() throws UserException;
 }

@@ -1,7 +1,7 @@
 package com.renko.payload.dto;
 
 import com.renko.domain.UserRole;
-import com.renko.model.UserEntity;
+import com.renko.entities.UserEntity;
 import lombok.Data;
 
 import java.time.LocalDateTime;

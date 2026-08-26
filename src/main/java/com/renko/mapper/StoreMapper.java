@@ -1,7 +1,7 @@
 package com.renko.mapper;
 
-import com.renko.model.StoreEntity;
-import com.renko.model.UserEntity;
+import com.renko.entities.StoreEntity;
+import com.renko.entities.UserEntity;
 import com.renko.payload.dto.StoreDto;
 
 public class StoreMapper

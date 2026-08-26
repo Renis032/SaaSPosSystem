@@ -1,9 +1,10 @@
 package com.renko.controller;
 
+import com.renko.domain.StoreStatus;
+import com.renko.entities.StoreEntity;
 import com.renko.exceptions.UserException;
 import com.renko.mapper.StoreMapper;
-import com.renko.model.StoreEntity;
-import com.renko.model.UserEntity;
+import com.renko.entities.UserEntity;
 import com.renko.payload.dto.StoreDto;
 import com.renko.payload.response.ApiResponse;
 import com.renko.service.StoreService;
@@ -16,11 +17,23 @@ import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/store")
+@RequestMapping("/api/stores")
 public class StoreController
 {
     private final StoreService storeService;
     private final UserService userService;
+
+    @GetMapping
+    public ResponseEntity<List<StoreDto>> getAllStores() throws UserException
+    {
+        List<StoreEntity> stores = storeService.getAllStores();
+
+        List<StoreDto> storeDtos = stores.stream()
+                .map(StoreMapper::toDto)
+                .toList();
+
+        return ResponseEntity.ok(storeDtos);
+    }
 
     @PostMapping
     public ResponseEntity<StoreDto> createStore(@RequestBody StoreDto storeDto,
@@ -30,16 +43,10 @@ public class StoreController
         return ResponseEntity.ok(storeService.createStore(storeDto, userEntity));
     }
 
-    @GetMapping(path = "/{id}")
+    @GetMapping("/{id}")
     public ResponseEntity<StoreDto> getStoreById(@PathVariable("id") Long id) throws Exception
     {
         return ResponseEntity.ok(storeService.getStoreById(id));
-    }
-
-    @GetMapping
-    public ResponseEntity<List<StoreDto>> getAllStore() throws Exception
-    {
-        return ResponseEntity.ok(storeService.getAllStores());
     }
 
     @GetMapping("/admin")
@@ -61,7 +68,14 @@ public class StoreController
         return ResponseEntity.ok(storeService.updateStore(id, storeDto));
     }
 
-    @PutMapping("/{id}")
+    @PutMapping("/{id}/moderate")
+    public ResponseEntity<StoreDto> moderateStore(@PathVariable("id") Long id,
+                                                  @RequestParam StoreStatus storeStatus) throws Exception
+    {
+        return ResponseEntity.ok(storeService.moderateStore(id, storeStatus));
+    }
+
+    @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse> deleteStore(@PathVariable("id") Long id) throws UserException
     {
         storeService.deleteStore(id);

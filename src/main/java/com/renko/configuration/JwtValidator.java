@@ -69,10 +69,7 @@ public class JwtValidator extends OncePerRequestFilter
                 // Controllers and services can now access the logged-in user
                 SecurityContextHolder.getContext().setAuthentication(auth);
 
-                System.out.println("JWT EMAIL: " + email);
-                System.out.println("JWT AUTHORITIES: " + auths);
-                System.out.println("AUTHENTICATED: " +
-                        SecurityContextHolder.getContext().getAuthentication().isAuthenticated());
+                        SecurityContextHolder.getContext().getAuthentication().isAuthenticated();
             }
             catch(Exception e)
             {

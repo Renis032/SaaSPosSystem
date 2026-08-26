@@ -1,8 +1,6 @@
-package com.renko.model;
+package com.renko.entities;
 
 import com.renko.domain.StoreStatus;
-import com.renko.mapper.UserMapper;
-import com.renko.payload.dto.StoreDto;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -23,7 +21,8 @@ public class StoreEntity
     @Column(nullable = false)
     private String brandName;
 
-    @OneToOne
+    @ManyToOne
+    @JoinColumn(name = "store_admin_id")
     private UserEntity storeAdmin;
 
     private LocalDateTime createdAt;

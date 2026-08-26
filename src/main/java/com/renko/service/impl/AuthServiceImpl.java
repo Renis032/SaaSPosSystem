@@ -4,7 +4,7 @@ import com.renko.configuration.JwtProvider;
 import com.renko.domain.UserRole;
 import com.renko.exceptions.UserException;
 import com.renko.mapper.UserMapper;
-import com.renko.model.UserEntity;
+import com.renko.entities.UserEntity;
 import com.renko.payload.dto.UserDto;
 import com.renko.payload.response.AuthResponse;
 import com.renko.repository.UserRepository;
@@ -40,7 +40,8 @@ public class AuthServiceImpl implements AuthService
             throw new UserException("Email is already registered!");
         }
 
-        if(userDto.getRole().equals(UserRole.ADMIN))
+        if(userDto.getRole() == UserRole.ADMIN &&
+           userRepository.existsByRole(UserRole.ADMIN))
         {
             throw new UserException("Only one ADMIN allowed!");
         }
@@ -52,7 +53,9 @@ public class AuthServiceImpl implements AuthService
         newUserEntity.setPhoneNumber(userDto.getPhoneNumber());
         newUserEntity.setFullName(userDto.getFullName());
 
+        newUserEntity.setCreatedAt(LocalDateTime.now());
         newUserEntity.setUpdatedAt(LocalDateTime.now());
+        newUserEntity.setLastLoginAt(LocalDateTime.now());
 
         // Save the User entity to the database
         // Spring Data JPA generates the SQL required to insert the user

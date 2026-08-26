@@ -1,11 +1,9 @@
-package com.renko.model;
+package com.renko.entities;
 
 import jakarta.persistence.Embeddable;
-import jakarta.persistence.Entity;
 import jakarta.validation.constraints.Email;
 import lombok.*;
 
-@Entity
 @Getter
 @Setter
 @Embeddable

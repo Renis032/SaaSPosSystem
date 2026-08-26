@@ -1,8 +1,9 @@
 package com.renko.service.impl;
 
 import com.renko.configuration.JwtProvider;
+import com.renko.domain.UserRole;
 import com.renko.exceptions.UserException;
-import com.renko.model.UserEntity;
+import com.renko.entities.UserEntity;
 import com.renko.repository.UserRepository;
 import com.renko.service.UserService;
 import lombok.RequiredArgsConstructor;
@@ -70,5 +71,18 @@ public class UserServiceImpl implements UserService
     public List<UserEntity> getAllUsers()
     {
         return userRepository.findAll();
+    }
+
+    @Override
+    public void deleteById(Long id)
+    {
+        userRepository.deleteById(id);
+    }
+
+    @Override
+    public UserEntity getAdminUser() throws UserException
+    {
+        return userRepository.findByRole(UserRole.ADMIN)
+                .orElseThrow(() -> new UserException("Admin user not found!"));
     }
 }

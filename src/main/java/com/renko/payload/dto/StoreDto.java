@@ -2,8 +2,8 @@ package com.renko.payload.dto;
 
 import com.renko.domain.StoreStatus;
 import com.renko.mapper.UserMapper;
-import com.renko.model.StoreEntity;
-import com.renko.model.StoreContactEntity;
+import com.renko.entities.StoreEntity;
+import com.renko.entities.StoreContactEntity;
 import lombok.Data;
 
 import java.time.LocalDateTime;

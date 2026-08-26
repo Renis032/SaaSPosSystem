@@ -1,4 +1,4 @@
-package com.renko.model;
+package com.renko.entities;
 
 import com.renko.domain.UserRole;
 import jakarta.persistence.*;
@@ -13,6 +13,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor // Generates an empty constructor
 @AllArgsConstructor // Generates a constructor with all properties the class has
 @EqualsAndHashCode // Generates equals and hashcode functions
+@Table(name = "user")
 public class UserEntity
 {
     @Id // Key
@@ -32,6 +33,7 @@ public class UserEntity
     private String phoneNumber;
 
     @Column(nullable = false)
+    @Enumerated(EnumType.ORDINAL)
     private UserRole role;
 
     @ManyToOne

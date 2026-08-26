@@ -1,10 +1,11 @@
 package com.renko.service.impl;
 
+import com.renko.domain.StoreStatus;
 import com.renko.exceptions.UserException;
 import com.renko.mapper.StoreMapper;
-import com.renko.model.StoreContactEntity;
-import com.renko.model.StoreEntity;
-import com.renko.model.UserEntity;
+import com.renko.entities.StoreContactEntity;
+import com.renko.entities.StoreEntity;
+import com.renko.entities.UserEntity;
 import com.renko.payload.dto.StoreDto;
 import com.renko.repository.StoreRepository;
 import com.renko.service.StoreService;
@@ -13,7 +14,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -43,11 +43,9 @@ public class StoreServiceImpl implements StoreService
     }
 
     @Override
-    public List<StoreDto> getAllStores()
+    public List<StoreEntity> getAllStores()
     {
-        List<StoreEntity> stores = storeRepository.findAll();
-        List<StoreDto> storeDtos = stores.stream().map(StoreMapper::toDto).collect(Collectors.toList());
-        return storeDtos;
+        return storeRepository.findAll();
     }
 
     @Override
@@ -93,7 +91,9 @@ public class StoreServiceImpl implements StoreService
     @Override
     public void deleteStore(Long id) throws UserException
     {
-        StoreEntity storeEntity = getStoreByAdmin();
+        StoreEntity storeEntity = storeRepository.findById(id)
+                                                 .orElseThrow(() -> new UserException("Store not found"));
+
         storeRepository.delete(storeEntity);
     }
 
@@ -107,5 +107,17 @@ public class StoreServiceImpl implements StoreService
         }
         
         return StoreMapper.toDto(currentUser.getStoreEntity());
+    }
+
+    @Override
+    public StoreDto moderateStore(Long id, StoreStatus storeStatus) throws Exception
+    {
+        StoreEntity storeEntity = storeRepository.findById(id)
+                                                 .orElseThrow(() -> new Exception("Store not found"));
+
+        storeEntity.setStatus(storeStatus);
+        StoreEntity savedStore = storeRepository.save(storeEntity);
+
+        return StoreMapper.toDto(savedStore);
     }
 }

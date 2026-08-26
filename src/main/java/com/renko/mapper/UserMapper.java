@@ -1,6 +1,6 @@
 package com.renko.mapper;
 
-import com.renko.model.UserEntity;
+import com.renko.entities.UserEntity;
 import com.renko.payload.dto.UserDto;
 
 public class UserMapper
