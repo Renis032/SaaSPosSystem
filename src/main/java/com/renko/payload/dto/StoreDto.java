@@ -28,7 +28,7 @@ public class StoreDto
 
     private StoreContactEntity contact;
 
-    public void setFromStore(StoreEntity storeEntity)
+    public void setFromEntity(StoreEntity storeEntity)
     {
         this.id = storeEntity.getId();
         this.brandName = storeEntity.getBrandName();

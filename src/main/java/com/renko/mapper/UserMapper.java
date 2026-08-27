@@ -8,7 +8,7 @@ public class UserMapper
     public static UserDto toDto(UserEntity savedUserEntity)
     {
         UserDto userDto = new UserDto();
-        userDto.setFromUser(savedUserEntity);
+        userDto.setFromEntity(savedUserEntity);
         return userDto;
     }
 }

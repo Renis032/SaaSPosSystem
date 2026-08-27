@@ -6,5 +6,6 @@ public enum UserRole
     ADMIN,
     CASHIER,
     BRANCH_MANAGER,
-    STORE_MANAGER
+    STORE_MANAGER,
+    OWNER
 }

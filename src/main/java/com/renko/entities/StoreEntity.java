@@ -1,6 +1,8 @@
 package com.renko.entities;
 
 import com.renko.domain.StoreStatus;
+import com.renko.payload.dto.StoreDto;
+import jakarta.mail.Store;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -48,5 +50,15 @@ public class StoreEntity
     protected void onUpdate()
     {
         updatedAt = LocalDateTime.now();
+    }
+    
+    public void setFromDto(StoreDto storeDto)
+    {
+        this.id = storeDto.getId();
+        this.brandName = storeDto.getBrandName();
+        this.description = storeDto.getDescription();
+        this.storeType = storeDto.getStoreType();
+        this.createdAt = storeDto.getCreatedAt();
+        this.updatedAt = storeDto.getUpdatedAt();
     }
 }

@@ -24,7 +24,7 @@ public class UserDto
     private LocalDateTime updatedAt;
     private LocalDateTime lastLoginAt;
 
-    public void setFromUser(UserEntity userEntity)
+    public void setFromEntity(UserEntity userEntity)
     {
         id = userEntity.getId();
         fullName = userEntity.getFullName();

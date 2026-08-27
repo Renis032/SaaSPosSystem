@@ -1,6 +1,7 @@
 package com.renko.entities;
 
 import com.renko.domain.UserRole;
+import com.renko.payload.dto.UserDto;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import lombok.*;

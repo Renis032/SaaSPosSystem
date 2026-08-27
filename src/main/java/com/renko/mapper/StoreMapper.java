@@ -9,7 +9,7 @@ public class StoreMapper
     public static StoreDto toDto(StoreEntity storeEntity)
     {
         StoreDto storeDto = new StoreDto();
-        storeDto.setFromStore(storeEntity);
+        storeDto.setFromEntity(storeEntity);
 
         return storeDto;
     }
@@ -17,13 +17,8 @@ public class StoreMapper
     public static StoreEntity toEntity(StoreDto storeDto, UserEntity storeAdmin)
     {
         StoreEntity storeEntity = new StoreEntity();
-        storeEntity.setId(storeDto.getId());
-        storeEntity.setBrandName(storeDto.getBrandName());
-        storeEntity.setDescription(storeDto.getDescription());
+        storeEntity.setFromDto(storeDto);
         storeEntity.setStoreAdmin(storeAdmin);
-        storeEntity.setStoreType(storeDto.getStoreType());
-        storeEntity.setCreatedAt(storeDto.getCreatedAt());
-        storeEntity.setUpdatedAt(storeDto.getUpdatedAt());
 
         return storeEntity;
     }

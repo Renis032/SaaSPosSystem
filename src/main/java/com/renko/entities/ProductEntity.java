@@ -1,5 +1,6 @@
 package com.renko.entities;
 
+import com.renko.payload.dto.ProductDto;
 import jakarta.persistence.*;
 import lombok.*;
 import jakarta.persistence.Id;
@@ -39,6 +40,7 @@ public class ProductEntity
 
     @ManyToOne
     private StoreEntity storeEntity;
+    private Long storeId;
 
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
@@ -53,5 +55,22 @@ public class ProductEntity
     protected void onUpdate()
     {
         updatedAt = LocalDateTime.now();
+    }
+
+    public void setFromDto(ProductDto productDto, StoreEntity storeEntity)
+    {
+        this.id = productDto.getId();
+        this.name = productDto.getName();
+        this.sku = productDto.getSku();
+        this.description = productDto.getDescription();
+        this.maxRetailPrice = productDto.getMaxRetailPrice();
+        this.sellingPrice = productDto.getSellingPrice();
+        this.brand = productDto.getBrand();
+        this.imageUrl = productDto.getImageUrl();
+        this.categoryEntity = productDto.getCategoryEntity();
+        this.storeEntity = storeEntity;
+        this.storeId = productDto.getStoreId();
+        this.createdAt = productDto.getCreatedAt();
+        this.updatedAt = productDto.getUpdatedAt();
     }
 }
