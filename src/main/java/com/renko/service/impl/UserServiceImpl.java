@@ -4,6 +4,8 @@ import com.renko.configuration.JwtProvider;
 import com.renko.domain.UserRole;
 import com.renko.exceptions.UserException;
 import com.renko.entities.UserEntity;
+import com.renko.mapper.UserMapper;
+import com.renko.payload.dto.UserDto;
 import com.renko.repository.UserRepository;
 import com.renko.service.UserService;
 import lombok.RequiredArgsConstructor;
@@ -11,6 +13,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -20,7 +23,7 @@ public class UserServiceImpl implements UserService
     private final JwtProvider jwtProvider;
 
     @Override
-    public UserEntity getUserFromJwtToken(String token) throws UserException
+    public UserDto getUserFromJwtToken(String token) throws UserException
     {
         String email = jwtProvider.getEmailFromToken(token);
         UserEntity userEntity = userRepository.findByEmail(email);
@@ -30,11 +33,11 @@ public class UserServiceImpl implements UserService
             throw new UserException("Invalid token!");
         }
 
-        return userEntity;
+        return UserMapper.toDto(userEntity);
     }
 
     @Override
-    public UserEntity getCurrentUser() throws UserException
+    public UserDto getCurrentUser() throws UserException
     {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
         UserEntity currentUserEntity = userRepository.findByEmail(email);
@@ -43,11 +46,11 @@ public class UserServiceImpl implements UserService
             throw new UserException("User not found!");
         }
 
-        return currentUserEntity;
+        return  UserMapper.toDto(currentUserEntity);
     }
 
     @Override
-    public UserEntity getUserByEmail(String email) throws UserException
+    public UserDto getUserByEmail(String email) throws UserException
     {
         UserEntity userEntity = userRepository.findByEmail(email);
         if(userEntity == null)
@@ -55,22 +58,25 @@ public class UserServiceImpl implements UserService
             throw new UserException("User not found!");
         }
 
-        return userEntity;
+        return  UserMapper.toDto(userEntity);
     }
 
     @Override
-    public UserEntity getUserById(Long id) throws UserException, Exception
+    public UserDto getUserById(Long id) throws Exception
     {
-        return userRepository.findById(id).orElseThrow(() ->
+        return UserMapper.toDto(userRepository.findById(id).orElseThrow(() ->
         {
             return new Exception("User not found!");
-        });
+        }));
     }
 
     @Override
-    public List<UserEntity> getAllUsers()
+    public List<UserDto> getAllUsers()
     {
-        return userRepository.findAll();
+        List<UserEntity> users = userRepository.findAll();
+        return users.stream()
+                    .map(UserMapper::toDto)
+                    .collect(Collectors.toList());
     }
 
     @Override
@@ -80,9 +86,9 @@ public class UserServiceImpl implements UserService
     }
 
     @Override
-    public UserEntity getAdminUser() throws UserException
+    public UserDto getAdminUser() throws UserException
     {
-        return userRepository.findByRole(UserRole.ADMIN)
-                .orElseThrow(() -> new UserException("Admin user not found!"));
+        return UserMapper.toDto(userRepository.findByRole(UserRole.ADMIN)
+                .orElseThrow(() -> new UserException("Admin user not found!")));
     }
 }

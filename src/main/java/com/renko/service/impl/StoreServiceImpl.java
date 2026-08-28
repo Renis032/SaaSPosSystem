@@ -7,6 +7,7 @@ import com.renko.entities.StoreContactEntity;
 import com.renko.entities.StoreEntity;
 import com.renko.entities.UserEntity;
 import com.renko.payload.dto.StoreDto;
+import com.renko.payload.dto.UserDto;
 import com.renko.repository.StoreRepository;
 import com.renko.service.StoreService;
 import com.renko.service.UserService;
@@ -28,8 +29,7 @@ public class StoreServiceImpl implements StoreService
         StoreEntity storeEntity = StoreMapper.toEntity(storeDto, userEntity);
 
         StoreEntity savedStoreEntity = storeRepository.save(storeEntity);
-        StoreDto savedStoreDto = StoreMapper.toDto(savedStoreEntity);
-        return savedStoreDto;
+        return StoreMapper.toDto(savedStoreEntity);
     }
 
     @Override
@@ -51,15 +51,15 @@ public class StoreServiceImpl implements StoreService
     @Override
     public StoreEntity getStoreByAdmin() throws UserException
     {
-        UserEntity admin = userService.getCurrentUser();
-        return storeRepository.findByStoreAdmin(admin.getId());
+        UserDto admin = userService.getCurrentUser();
+        return storeRepository.findByStoreAdmin_Id(admin.getId());
     }
 
     @Override
     public StoreDto updateStore(Long id, StoreDto storeDto) throws UserException
     {
-        UserEntity currentUser = userService.getCurrentUser();
-        StoreEntity store = storeRepository.findByStoreAdmin(currentUser.getId());
+        UserDto currentUser = userService.getCurrentUser();
+        StoreEntity store = storeRepository.findByStoreAdmin_Id(currentUser.getId());
         if(store == null)
         {
             throw new UserException("You dont have permission");
@@ -98,15 +98,18 @@ public class StoreServiceImpl implements StoreService
     }
 
     @Override
-    public StoreDto getStoreByEmployee() throws UserException
+    public StoreDto getStoreByEmployee() throws Exception
     {
-        UserEntity currentUser = userService.getCurrentUser();
+        UserDto currentUser = userService.getCurrentUser();
         if(currentUser == null)
         {
             throw  new UserException("No permission.");
         }
-        
-        return StoreMapper.toDto(currentUser.getStoreEntity());
+
+        StoreEntity storeEntity = storeRepository.findById(currentUser.getStoreEntity().getId())
+                                                 .orElseThrow(() -> new Exception("No store found"));
+
+        return StoreMapper.toDto(storeEntity);
     }
 
     @Override

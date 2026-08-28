@@ -2,7 +2,9 @@ package com.renko.controller;
 
 import com.renko.entities.ProductEntity;
 import com.renko.entities.UserEntity;
+import com.renko.mapper.UserMapper;
 import com.renko.payload.dto.ProductDto;
+import com.renko.payload.dto.UserDto;
 import com.renko.payload.dto.updates.ProductUpdateDto;
 import com.renko.payload.response.ApiResponse;
 import com.renko.service.ProductService;
@@ -25,8 +27,8 @@ public class ProductController
     public ResponseEntity<ProductDto> createProduct(@RequestBody ProductDto productDto,
                                                     @RequestHeader("Authorization") String jwt) throws Exception
     {
-        UserEntity userEntity = userService.getUserFromJwtToken(jwt);
-        return ResponseEntity.ok(productService.createProduct(productDto, userEntity));
+        UserDto userDto = userService.getUserFromJwtToken(jwt);
+        return ResponseEntity.ok(productService.createProduct(productDto, UserMapper.toEntity(userDto)));
     }
 
 
@@ -42,7 +44,7 @@ public class ProductController
                                                     @RequestBody ProductUpdateDto productDto,
                                                     @RequestHeader("Authorization") String jwt) throws Exception
     {
-        UserEntity userEntity = userService.getUserFromJwtToken(jwt);
+        UserDto userDto = userService.getUserFromJwtToken(jwt);
         return ResponseEntity.ok(productService.updateProduct(id, productDto));
     }
 
@@ -50,8 +52,8 @@ public class ProductController
     public ResponseEntity<ApiResponse> deleteProduct(@PathVariable Long id,
                                                      @RequestHeader("Authorization") String jwt) throws Exception
     {
-        UserEntity userEntity = userService.getUserFromJwtToken(jwt);
-        productService.deleteProduct(id, userEntity);
+        UserDto userDto = userService.getUserFromJwtToken(jwt);
+        productService.deleteProduct(id, UserMapper.toEntity(userDto));
 
         ApiResponse apiResponse = new ApiResponse();
         apiResponse.setMessage("Product deleted successfully");

@@ -6,6 +6,7 @@ import com.renko.entities.StoreEntity;
 import com.renko.entities.UserEntity;
 import com.renko.exceptions.UserException;
 import com.renko.mapper.CategoryMapper;
+import com.renko.mapper.UserMapper;
 import com.renko.payload.dto.CategoryDto;
 import com.renko.repository.CategoryRepository;
 import com.renko.repository.StoreRepository;
@@ -29,7 +30,7 @@ public class CategoryServiceImpl implements CategoryService
     @Override
     public CategoryDto createCategoryDto(CategoryDto categoryDto) throws Exception
     {
-        UserEntity userEntity = userService.getCurrentUser();
+        UserEntity userEntity = UserMapper.toEntity(userService.getCurrentUser());
         StoreEntity storeEntity = storeRepository.findById(categoryDto.getStoreId())
                                                  .orElseThrow(() -> new Exception("Store not found"));
 
@@ -62,7 +63,7 @@ public class CategoryServiceImpl implements CategoryService
         CategoryEntity categoryEntity = categoryRepository.findById(id)
                                                           .orElseThrow(() -> new Exception("Category not found"));
 
-        UserEntity userEntity = userService.getCurrentUser();
+        UserEntity userEntity = UserMapper.toEntity(userService.getCurrentUser());
         categoryEntity.setName(categoryDto.getName());
 
         if(false == isAuthenticated(userEntity, categoryEntity.getStoreEntity()))
@@ -79,7 +80,7 @@ public class CategoryServiceImpl implements CategoryService
         CategoryEntity categoryEntity = categoryRepository.findById(id)
                                                           .orElseThrow(() -> new Exception("Category not found"));
 
-        UserEntity userEntity = userService.getCurrentUser();
+        UserEntity userEntity = UserMapper.toEntity(userService.getCurrentUser());
         if(false == isAuthenticated(userEntity, categoryEntity.getStoreEntity()))
         {
             throw new Exception("You dont have permission");

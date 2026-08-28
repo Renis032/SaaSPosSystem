@@ -16,7 +16,21 @@ public class ProductMapper
     public static ProductEntity toEntity(ProductDto productDto, StoreEntity storeEntity)
     {
         ProductEntity productEntity = new ProductEntity();
-        productEntity.setFromDto(productDto, storeEntity);
+
+        productEntity.setId(productDto.getId());
+        productEntity.setName(productDto.getName());
+        productEntity.setSku(productDto.getSku());
+        productEntity.setDescription(productDto.getDescription());
+        productEntity.setMaxRetailPrice(productDto.getMaxRetailPrice());
+        productEntity.setSellingPrice(productDto.getSellingPrice());
+        productEntity.setBrand(productDto.getBrand());
+        productEntity.setImageUrl(productDto.getImageUrl());
+        productEntity.setCategoryEntity (productDto.getCategoryEntity());
+        productEntity.setStoreEntity(storeEntity);
+        productEntity.setStoreId(productDto.getStoreId());
+        productEntity.setCreatedAt(productDto.getCreatedAt());
+        productEntity.setUpdatedAt(productDto.getUpdatedAt());
+
         return productEntity;
     }
 }

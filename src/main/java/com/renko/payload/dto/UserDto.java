@@ -1,6 +1,7 @@
 package com.renko.payload.dto;
 
 import com.renko.domain.UserRole;
+import com.renko.entities.StoreEntity;
 import com.renko.entities.UserEntity;
 import lombok.Data;
 
@@ -24,6 +25,8 @@ public class UserDto
     private LocalDateTime updatedAt;
     private LocalDateTime lastLoginAt;
 
+    private StoreEntity storeEntity;
+
     public void setFromEntity(UserEntity userEntity)
     {
         id = userEntity.getId();
@@ -34,5 +37,6 @@ public class UserDto
         createdAt = userEntity.getCreatedAt();
         updatedAt = userEntity.getUpdatedAt();
         lastLoginAt = userEntity.getLastLoginAt();
+        storeEntity = userEntity.getStoreEntity();
     }
 }

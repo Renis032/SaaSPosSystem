@@ -58,23 +58,6 @@ public class ProductEntity
         updatedAt = LocalDateTime.now();
     }
 
-    public void setFromDto(ProductDto productDto, StoreEntity storeEntity)
-    {
-        this.id = productDto.getId();
-        this.name = productDto.getName();
-        this.sku = productDto.getSku();
-        this.description = productDto.getDescription();
-        this.maxRetailPrice = productDto.getMaxRetailPrice();
-        this.sellingPrice = productDto.getSellingPrice();
-        this.brand = productDto.getBrand();
-        this.imageUrl = productDto.getImageUrl();
-        this.categoryEntity = productDto.getCategoryEntity();
-        this.storeEntity = storeEntity;
-        this.storeId = productDto.getStoreId();
-        this.createdAt = productDto.getCreatedAt();
-        this.updatedAt = productDto.getUpdatedAt();
-    }
-
     public void updateFrom(ProductUpdateDto dto)
     {
         if(dto.getName() != null)

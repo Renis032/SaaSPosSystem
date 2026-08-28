@@ -11,4 +11,11 @@ public class UserMapper
         userDto.setFromEntity(savedUserEntity);
         return userDto;
     }
+
+    public static UserEntity toEntity(UserDto userDto)
+    {
+        UserEntity userEntity = new UserEntity();
+        userEntity.setFromDto(userDto);
+        return userEntity;
+    }
 }

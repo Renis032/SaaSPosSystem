@@ -43,4 +43,16 @@ public class UserEntity
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private LocalDateTime lastLoginAt;
+
+    public void setFromDto(UserDto userDto)
+    {
+        id = userDto.getId();
+        fullName = userDto.getFullName();
+        email = userDto.getEmail();
+        phoneNumber = userDto.getPhoneNumber();
+        role = userDto.getRole();
+        createdAt = userDto.getCreatedAt();
+        updatedAt = userDto.getUpdatedAt();
+        lastLoginAt = userDto.getLastLoginAt();
+    }
 }

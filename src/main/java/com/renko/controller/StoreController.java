@@ -5,7 +5,9 @@ import com.renko.entities.StoreEntity;
 import com.renko.exceptions.UserException;
 import com.renko.mapper.StoreMapper;
 import com.renko.entities.UserEntity;
+import com.renko.mapper.UserMapper;
 import com.renko.payload.dto.StoreDto;
+import com.renko.payload.dto.UserDto;
 import com.renko.payload.response.ApiResponse;
 import com.renko.service.StoreService;
 import com.renko.service.UserService;
@@ -39,8 +41,8 @@ public class StoreController
     public ResponseEntity<StoreDto> createStore(@RequestBody StoreDto storeDto,
                                                 @RequestHeader("Authorization") String jwt) throws UserException
     {
-        UserEntity userEntity = userService.getUserFromJwtToken(jwt);
-        return ResponseEntity.ok(storeService.createStore(storeDto, userEntity));
+        UserDto userDto = userService.getUserFromJwtToken(jwt);
+        return ResponseEntity.ok(storeService.createStore(storeDto, UserMapper.toEntity(userDto)));
     }
 
     @GetMapping("/{id}")

@@ -21,23 +21,19 @@ public class UserController
     @GetMapping("/profile")
     public ResponseEntity<UserDto> getUserProfile(@RequestHeader("Authorization") String jwt) throws UserException
     {
-        UserEntity userEntity = userService.getUserFromJwtToken(jwt);
-        return ResponseEntity.ok(UserMapper.toDto(userEntity));
+        return ResponseEntity.ok(userService.getUserFromJwtToken(jwt));
     }
 
     @GetMapping("/admin")
     public ResponseEntity<UserDto> getAdminUser() throws UserException {
-        UserEntity admin = userService.getAdminUser();
-
-        return ResponseEntity.ok(UserMapper.toDto(admin));
+        return ResponseEntity.ok(userService.getAdminUser());
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<UserDto> getUserById(@RequestHeader("Authorization") String jwt,
                                                @PathVariable Long id) throws UserException, Exception
     {
-        UserEntity userEntity = userService.getUserById(id);
-        return ResponseEntity.ok(UserMapper.toDto(userEntity));
+        return ResponseEntity.ok( userService.getUserById(id));
     }
 
     @DeleteMapping("/{id}")
@@ -49,12 +45,7 @@ public class UserController
     @GetMapping
     public ResponseEntity<List<UserDto>> getAllUsers() throws UserException
     {
-        List<UserEntity> users = userService.getAllUsers();
-
-        List<UserDto> userDtos = users.stream()
-                .map(UserMapper::toDto)
-                .toList();
-
-        return ResponseEntity.ok(userDtos);
+        List<UserDto> usersDto = userService.getAllUsers();
+        return ResponseEntity.ok(usersDto);
     }
 }

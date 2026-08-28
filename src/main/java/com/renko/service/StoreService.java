@@ -16,6 +16,6 @@ public interface StoreService
     StoreEntity getStoreByAdmin() throws UserException;
     StoreDto updateStore(Long id, StoreDto storeDto) throws UserException;
     void deleteStore(Long id) throws UserException;
-    StoreDto getStoreByEmployee() throws UserException;
+    StoreDto getStoreByEmployee() throws Exception;
     StoreDto moderateStore(Long id, StoreStatus storeStatus) throws Exception;
 }
