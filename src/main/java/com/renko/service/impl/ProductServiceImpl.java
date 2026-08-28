@@ -5,6 +5,8 @@ import com.renko.entities.StoreEntity;
 import com.renko.entities.UserEntity;
 import com.renko.mapper.ProductMapper;
 import com.renko.payload.dto.ProductDto;
+import com.renko.payload.dto.updates.ProductUpdateDto;
+import com.renko.repository.CategoryRepository;
 import com.renko.repository.ProductRepository;
 import com.renko.repository.StoreRepository;
 import com.renko.service.ProductService;
@@ -20,6 +22,7 @@ public class ProductServiceImpl implements ProductService
 {
     private final ProductRepository productRepository;
     private final StoreRepository storeRepository;
+    private final CategoryRepository categoryRepository;
 
     @Override
     public ProductDto createProduct(ProductDto productDto, UserEntity userEntity) throws Exception
@@ -34,13 +37,13 @@ public class ProductServiceImpl implements ProductService
     }
 
     @Override
-    public ProductDto updateProduct(Long id, ProductDto productDto, UserEntity userEntity) throws Exception
+    public ProductDto updateProduct(Long id, ProductUpdateDto productDto) throws Exception
     {
 
         ProductEntity productEntity = productRepository.findById(id)
                 .orElseThrow(() -> new Exception("Product not found."));
 
-        productEntity.setFromDto(productDto, productEntity.getStoreEntity());
+        productEntity.updateFrom(productDto);
         productEntity.setCreatedAt(productEntity.getCreatedAt()); // CHECK
         ProductEntity savedProduct = productRepository.save(productEntity);
 

@@ -3,6 +3,7 @@ package com.renko.controller;
 import com.renko.entities.ProductEntity;
 import com.renko.entities.UserEntity;
 import com.renko.payload.dto.ProductDto;
+import com.renko.payload.dto.updates.ProductUpdateDto;
 import com.renko.payload.response.ApiResponse;
 import com.renko.service.ProductService;
 import com.renko.service.UserService;
@@ -38,11 +39,11 @@ public class ProductController
 
     @PatchMapping("/{id}")
     public ResponseEntity<ProductDto> updateProduct(@PathVariable Long id,
-                                                    @RequestBody ProductDto productDto,
+                                                    @RequestBody ProductUpdateDto productDto,
                                                     @RequestHeader("Authorization") String jwt) throws Exception
     {
         UserEntity userEntity = userService.getUserFromJwtToken(jwt);
-        return ResponseEntity.ok(productService.updateProduct(id, productDto, userEntity));
+        return ResponseEntity.ok(productService.updateProduct(id, productDto));
     }
 
     @DeleteMapping("/{id}")

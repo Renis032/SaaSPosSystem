@@ -1,6 +1,7 @@
 package com.renko.entities;
 
 import com.renko.payload.dto.ProductDto;
+import com.renko.payload.dto.updates.ProductUpdateDto;
 import jakarta.persistence.*;
 import lombok.*;
 import jakarta.persistence.Id;
@@ -72,5 +73,50 @@ public class ProductEntity
         this.storeId = productDto.getStoreId();
         this.createdAt = productDto.getCreatedAt();
         this.updatedAt = productDto.getUpdatedAt();
+    }
+
+    public void updateFrom(ProductUpdateDto dto)
+    {
+        if(dto.getName() != null)
+        {
+            this.name = dto.getName();
+        }
+
+        if(dto.getSku() != null)
+        {
+            this.sku = dto.getSku();
+        }
+
+        if(dto.getDescription() != null)
+        {
+            this.description = dto.getDescription();
+        }
+
+        if(dto.getMaxRetailPrice() != null)
+        {
+            this.maxRetailPrice = dto.getMaxRetailPrice();
+        }
+
+        if(dto.getSellingPrice() != null)
+        {
+            this.sellingPrice = dto.getSellingPrice();
+        }
+
+        if(dto.getBrand() != null)
+        {
+            this.brand = dto.getBrand();
+        }
+
+        if(dto.getImageUrl() != null)
+        {
+            this.imageUrl = dto.getImageUrl();
+        }
+
+        if(dto.getCategoryEntity() != null)
+        {
+            this.categoryEntity = dto.getCategoryEntity();
+        }
+
+        this.updatedAt = LocalDateTime.now();
     }
 }

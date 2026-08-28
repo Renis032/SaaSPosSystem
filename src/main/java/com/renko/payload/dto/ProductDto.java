@@ -2,9 +2,6 @@ package com.renko.payload.dto;
 
 import com.renko.entities.CategoryEntity;
 import com.renko.entities.ProductEntity;
-import com.renko.entities.StoreEntity;
-import jakarta.persistence.Column;
-import jakarta.persistence.ManyToOne;
 import lombok.Data;
 
 import java.time.LocalDateTime;
