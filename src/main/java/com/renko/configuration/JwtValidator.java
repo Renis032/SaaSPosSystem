@@ -69,11 +69,15 @@ public class JwtValidator extends OncePerRequestFilter
                 // Controllers and services can now access the logged-in user
                 SecurityContextHolder.getContext().setAuthentication(auth);
 
-                        SecurityContextHolder.getContext().getAuthentication().isAuthenticated();
+                SecurityContextHolder.getContext().getAuthentication().isAuthenticated();
             }
             catch(Exception e)
             {
-                throw new BadCredentialsException("Invalid JWT");
+                System.out.println("JWT ERROR: " + e.getClass().getName());
+                System.out.println("JWT MESSAGE: " + e.getMessage());
+                e.printStackTrace();
+
+                throw new BadCredentialsException("Invalid JWT", e);
             }
         }
 

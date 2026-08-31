@@ -22,7 +22,6 @@ public class ProductServiceImpl implements ProductService
 {
     private final ProductRepository productRepository;
     private final StoreRepository storeRepository;
-    private final CategoryRepository categoryRepository;
 
     @Override
     public ProductDto createProduct(ProductDto productDto, UserEntity userEntity) throws Exception
