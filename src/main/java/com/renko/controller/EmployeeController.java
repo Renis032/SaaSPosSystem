@@ -1,0 +1,51 @@
+package com.renko.controller;
+
+import com.renko.domain.UserRole;
+import com.renko.payload.dto.UserDto;
+import com.renko.payload.dto.updates.UserUpdateDto;
+import com.renko.payload.response.ApiResponse;
+import com.renko.service.EmployeeService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+@RequiredArgsConstructor
+@RequestMapping("/api/employees")
+public class EmployeeController
+{
+    private final EmployeeService employeeService;
+
+    @PostMapping("/store/{storeId}")
+    public ResponseEntity<UserDto> createEmployee(@PathVariable Long storeId,
+                                                  @RequestBody UserDto userDto) throws Exception
+    {
+        return ResponseEntity.ok(employeeService.createStoreEmployee(userDto, storeId));
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<UserDto> updateEmployee(@PathVariable Long id,
+                                                  @RequestBody UserUpdateDto userDto) throws Exception
+    {
+        return ResponseEntity.ok(employeeService.updateStoreEmployee(id, userDto));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<ApiResponse> deleteEmployee(@PathVariable Long id) throws Exception
+    {
+        employeeService.deleteEmployee(id);
+
+        ApiResponse apiResponse = new ApiResponse();
+        apiResponse.setMessage("Employee deleted successfully");
+        return ResponseEntity.ok(apiResponse);
+    }
+
+    @GetMapping("/store/{storeId}")
+    public ResponseEntity<List<UserDto>> getEmployeesByStoreId(@PathVariable Long storeId,
+                                                               @RequestParam(required = false) UserRole role) throws Exception
+    {
+        return ResponseEntity.ok(employeeService.findStoreEmployeesByRole(storeId, role));
+    }
+}

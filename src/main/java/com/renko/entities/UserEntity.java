@@ -2,6 +2,7 @@ package com.renko.entities;
 
 import com.renko.domain.UserRole;
 import com.renko.payload.dto.UserDto;
+import com.renko.payload.dto.updates.UserUpdateDto;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import lombok.*;
@@ -54,5 +55,25 @@ public class UserEntity
         createdAt = userDto.getCreatedAt();
         updatedAt = userDto.getUpdatedAt();
         lastLoginAt = userDto.getLastLoginAt();
+    }
+
+    public void updateFrom(UserUpdateDto dto)
+    {
+        if(dto.getEmail() != null)
+        {
+            this.setEmail(dto.getEmail());
+        }
+        if(dto.getFullName() != null)
+        {
+            this.setFullName(dto.getFullName());
+        }
+        if(dto.getPhoneNumber() != null)
+        {
+            this.setPhoneNumber(dto.getPhoneNumber());
+        }
+        if(dto.getRole() != null)
+        {
+            this.setRole(dto.getRole());
+        }
     }
 }
