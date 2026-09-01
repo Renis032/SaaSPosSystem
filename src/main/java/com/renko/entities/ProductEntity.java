@@ -32,6 +32,9 @@ public class ProductEntity
 
     private Double sellingPrice;
 
+    @Column(nullable = false)
+    private Double discountPercentage = 0.0;
+
     private String brand;
 
     private String imageUrl;
