@@ -39,6 +39,7 @@ public class UserEntity
     private UserRole role;
 
     @ManyToOne
+    @JoinColumn(name = "store_id")
     private StoreEntity storeEntity;
 
     private LocalDateTime createdAt;

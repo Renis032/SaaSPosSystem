@@ -40,7 +40,7 @@ public class ProductServiceImpl implements ProductService
     {
 
         ProductEntity productEntity = productRepository.findById(id)
-                .orElseThrow(() -> new Exception("Product not found."));
+                .orElseThrow(() -> new Exception("Product not found with id " + id));
 
         productEntity.updateFrom(productDto);
         productEntity.setCreatedAt(productEntity.getCreatedAt()); // CHECK

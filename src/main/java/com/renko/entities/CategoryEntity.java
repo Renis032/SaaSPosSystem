@@ -19,5 +19,6 @@ public class CategoryEntity
     private String name;
 
     @ManyToOne
+    @JoinColumn(name = "store_id")
     private StoreEntity storeEntity;
 }

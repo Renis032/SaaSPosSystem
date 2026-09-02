@@ -4,6 +4,7 @@ import com.renko.domain.UserRole;
 import com.renko.entities.StoreEntity;
 import com.renko.entities.UserEntity;
 import com.renko.mapper.UserMapper;
+import com.renko.payload.dto.CreateEmployeeDto;
 import com.renko.payload.dto.UserDto;
 import com.renko.payload.dto.updates.UserUpdateDto;
 import com.renko.payload.response.ApiResponse;
@@ -26,12 +27,16 @@ public class EmployeeServiceImpl implements EmployeeService
     private final UserRepository userRepository;
 
     @Override
-    public UserDto createStoreEmployee(UserDto employee, Long storeId) throws Exception
+    public UserDto createStoreEmployee(CreateEmployeeDto employee, Long storeId) throws Exception
     {
         StoreEntity storeEntity = storeRepository.findById(storeId)
                                                  .orElseThrow(() -> new Exception("Store not found"));
 
-        UserEntity userEntity = UserMapper.toEntity(employee);
+        UserEntity userEntity = new UserEntity();
+        userEntity.setEmail(employee.getEmail());
+        userEntity.setFullName(employee.getFullName());
+        userEntity.setPhoneNumber(employee.getPhoneNumber());
+        userEntity.setRole(employee.getRole());
         userEntity.setStoreEntity(storeEntity);
         userEntity.setPassword(passwordEncoder.encode(employee.getPassword()));
 

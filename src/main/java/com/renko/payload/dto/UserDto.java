@@ -15,7 +15,7 @@ public class UserDto
     private Long id;
     private String fullName;
     private String email;
-    private String password;
+//    private String password;
 
     private String phoneNumber;
 
@@ -25,7 +25,7 @@ public class UserDto
     private LocalDateTime updatedAt;
     private LocalDateTime lastLoginAt;
 
-    private StoreEntity storeEntity;
+    private Long storeId;
 
     public void setFromEntity(UserEntity userEntity)
     {
@@ -37,6 +37,9 @@ public class UserDto
         createdAt = userEntity.getCreatedAt();
         updatedAt = userEntity.getUpdatedAt();
         lastLoginAt = userEntity.getLastLoginAt();
-        storeEntity = userEntity.getStoreEntity();
+        if(userEntity.getStoreEntity() != null)
+        {
+            this.storeId = userEntity.getStoreEntity().getId();
+        }
     }
 }

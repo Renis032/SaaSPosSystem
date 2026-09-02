@@ -40,7 +40,6 @@ public class OrderMapper
                 .customerName(orderEntity.getCustomerEntity().getFullName())
                 .customerPhone(orderEntity.getCustomerEntity().getPhone())
                 .cashier(UserMapper.toDto(orderEntity.getCashierEntity()))
-                .customer(orderEntity.getCustomerEntity())
                 .stripePaymentIntentId(orderEntity.getStripePaymentIntentId())
                 .items(itemsFromEntity)
                 .build();

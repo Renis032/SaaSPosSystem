@@ -1,6 +1,7 @@
 package com.renko.controller;
 
 import com.renko.domain.UserRole;
+import com.renko.payload.dto.CreateEmployeeDto;
 import com.renko.payload.dto.UserDto;
 import com.renko.payload.dto.updates.UserUpdateDto;
 import com.renko.payload.response.ApiResponse;
@@ -20,9 +21,9 @@ public class EmployeeController
 
     @PostMapping("/store/{storeId}")
     public ResponseEntity<UserDto> createEmployee(@PathVariable Long storeId,
-                                                  @RequestBody UserDto userDto) throws Exception
+                                                  @RequestBody CreateEmployeeDto createEmployeeDto) throws Exception
     {
-        return ResponseEntity.ok(employeeService.createStoreEmployee(userDto, storeId));
+        return ResponseEntity.ok(employeeService.createStoreEmployee(createEmployeeDto, storeId));
     }
 
     @PutMapping("/{id}")

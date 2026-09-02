@@ -23,8 +23,10 @@ public class OrderItemEntity
     private Double discountApplied = 0.0;
 
     @ManyToOne
+    @JoinColumn(name = "product_id")
     private ProductEntity productEntity;
 
     @ManyToOne
+    @JoinColumn(name = "order_id")
     private OrderEntity orderEntity;
 }

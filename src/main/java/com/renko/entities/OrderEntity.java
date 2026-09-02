@@ -27,15 +27,18 @@ public class OrderEntity
     private Double totalDiscount = 0.0;
 
     @ManyToOne
+    @JoinColumn(name = "store_id")
     private StoreEntity storeEntity;
 
     @ManyToOne
+    @JoinColumn(name = "cashier_id")
     private UserEntity cashierEntity;
 
     @OneToMany(mappedBy = "orderEntity", cascade = CascadeType.ALL)
     private List<OrderItemEntity> items;
 
     @ManyToOne
+    @JoinColumn(name = "customer_id")
     private CustomerEntity customerEntity;
 
     @Enumerated(EnumType.STRING)

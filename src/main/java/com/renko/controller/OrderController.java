@@ -1,5 +1,84 @@
 package com.renko.controller;
 
+import com.renko.domain.OrderStatus;
+import com.renko.domain.PaymentType;
+import com.renko.payload.dto.OrderDto;
+import com.renko.payload.dto.ReceiptDto;
+import com.renko.payload.response.ApiResponse;
+import com.renko.service.OrderService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+@RequiredArgsConstructor
+@RequestMapping("/api/orders")
 public class OrderController
 {
+    private final OrderService orderService;
+
+    @PostMapping
+    public ResponseEntity<OrderDto> createOrder(@RequestBody OrderDto orderDto) throws Exception
+    {
+        return ResponseEntity.ok(orderService.createOrder(orderDto));
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<OrderDto> getOrderById(@PathVariable Long id)
+    {
+        return ResponseEntity.ok(orderService.getOrderById(id));
+    }
+
+    @GetMapping("/store/{storeId}")
+    public ResponseEntity<List<OrderDto>> getOrdersByStore(@PathVariable Long storeId,
+                                                           @RequestParam(required = false) Long customerId,
+                                                           @RequestParam(required = false) Long cashierId,
+                                                           @RequestParam(required = false) PaymentType paymentType,
+                                                           @RequestParam(required = false) OrderStatus orderStatus)
+    {
+        return ResponseEntity.ok(orderService.getOrdersByStore(storeId, customerId, cashierId, paymentType, orderStatus));
+    }
+
+    @GetMapping("/today/store/{storeId}")
+    public ResponseEntity<List<OrderDto>> getTodayOrdersByStore(@PathVariable Long storeId)
+    {
+        return ResponseEntity.ok(orderService.getTodayOrdersByStore(storeId));
+    }
+
+    @GetMapping("/recent/store/{storeId}")
+    public ResponseEntity<List<OrderDto>> getRecentOrders(@PathVariable Long storeId)
+    {
+        return ResponseEntity.ok(orderService.getTop5RecentOrdersByStoreId(storeId));
+    }
+
+    @GetMapping("/cashier/{id}")
+    public ResponseEntity<List<OrderDto>> getOrdersByCashier(@PathVariable Long id)
+    {
+        return ResponseEntity.ok(orderService.getOrdersByCashier(id));
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<OrderDto> updateOrder(@PathVariable Long id,
+                                                @RequestBody OrderDto orderDto) throws Exception
+    {
+        return ResponseEntity.ok(orderService.updateOrder(id, orderDto));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<ApiResponse> deleteOrder(@PathVariable Long id)
+    {
+        orderService.deleteOrder(id);
+
+        ApiResponse apiResponse = new ApiResponse();
+        apiResponse.setMessage("Order deleted successfully");
+        return ResponseEntity.ok(apiResponse);
+    }
+
+    @GetMapping("/{id}/receipt")
+    public ResponseEntity<ReceiptDto> getReceipt(@PathVariable Long id)
+    {
+        return ResponseEntity.ok(orderService.getReceipt(id));
+    }
 }

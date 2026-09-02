@@ -1,6 +1,7 @@
 package com.renko.controller;
 
 import com.renko.exceptions.UserException;
+import com.renko.payload.dto.AuthRequestDto;
 import com.renko.payload.dto.UserDto;
 import com.renko.payload.response.AuthResponse;
 import com.renko.service.AuthService;
@@ -20,14 +21,14 @@ public class AuthController
     private final AuthService authService;
 
     @PostMapping("/signup")
-    public ResponseEntity<AuthResponse> signUp(@RequestBody UserDto userDto) throws UserException
+    public ResponseEntity<AuthResponse> signUp(@RequestBody AuthRequestDto authRequestDto) throws UserException
     {
-        return ResponseEntity.ok(authService.signUp(userDto));
+        return ResponseEntity.ok(authService.signUp(authRequestDto));
     }
 
     @PostMapping("/login")
-    public ResponseEntity<AuthResponse> login(@RequestBody UserDto userDto) throws UserException
+    public ResponseEntity<AuthResponse> login(@RequestBody AuthRequestDto authRequestDto) throws UserException
     {
-        return ResponseEntity.ok(authService.login(userDto));
+        return ResponseEntity.ok(authService.login(authRequestDto));
     }
 }

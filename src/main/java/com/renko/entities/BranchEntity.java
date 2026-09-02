@@ -37,9 +37,11 @@ public class BranchEntity
     private LocalDateTime updatedAt;
 
     @ManyToOne
+    @JoinColumn(name = "store_id")
     private StoreEntity storeEntity;
 
     @OneToOne
+    @JoinColumn(name = "user_id")
     private UserEntity userEntity;
 
     @PrePersist

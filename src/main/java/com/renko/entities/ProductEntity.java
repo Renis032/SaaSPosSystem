@@ -40,11 +40,12 @@ public class ProductEntity
     private String imageUrl;
 
     @ManyToOne
+    @JoinColumn(name = "category_id")
     private CategoryEntity categoryEntity;
 
     @ManyToOne
+    @JoinColumn(name = "store_id")
     private StoreEntity storeEntity;
-    private Long storeId;
 
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

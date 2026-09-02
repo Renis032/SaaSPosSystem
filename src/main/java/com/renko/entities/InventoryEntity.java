@@ -14,7 +14,7 @@ import java.time.LocalDateTime;
 @EqualsAndHashCode
 @Builder
 @Table(uniqueConstraints = @UniqueConstraint(name = "uk_inventory_store_product",
-                                             columnNames = {"store_entity_id", "product_entity_id"}))
+                                             columnNames = {"store_id", "product_id"}))
 public class InventoryEntity
 {
     @Id
@@ -22,11 +22,11 @@ public class InventoryEntity
     private Long id;
 
     @ManyToOne
-    @JoinColumn(name = "store_entity_id", nullable = false)
+    @JoinColumn(name = "store_id", nullable = false)
     private StoreEntity storeEntity;
 
     @ManyToOne
-    @JoinColumn(name = "product_entity_id", nullable = false)
+    @JoinColumn(name = "product_id", nullable = false)
     private ProductEntity productEntity;
 
     @Column(nullable = false)

@@ -43,7 +43,6 @@ public class ProductDto
         this.brand = productEntity.getBrand();
         this.imageUrl = productEntity.getImageUrl();
         this.categoryEntity = productEntity.getCategoryEntity();
-        this.storeId = productEntity.getStoreId();
         this.createdAt = productEntity.getCreatedAt();
         this.updatedAt = productEntity.getUpdatedAt();
     }

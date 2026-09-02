@@ -27,7 +27,6 @@ public class ProductMapper
         productEntity.setImageUrl(productDto.getImageUrl());
         productEntity.setCategoryEntity (productDto.getCategoryEntity());
         productEntity.setStoreEntity(storeEntity);
-        productEntity.setStoreId(productDto.getStoreId());
         productEntity.setCreatedAt(productDto.getCreatedAt());
         productEntity.setUpdatedAt(productDto.getUpdatedAt());
 

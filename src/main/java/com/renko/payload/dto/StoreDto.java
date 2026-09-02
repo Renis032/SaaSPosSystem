@@ -15,7 +15,7 @@ public class StoreDto
 
     private String brandName;
 
-    private UserDto storeAdminDto;
+    private Long storeAdminId;
 
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
@@ -32,7 +32,7 @@ public class StoreDto
     {
         this.id = storeEntity.getId();
         this.brandName = storeEntity.getBrandName();
-        this.storeAdminDto = UserMapper.toDto(storeEntity.getStoreAdmin());
+        this.storeAdminId = storeEntity.getStoreAdmin().getId();
         this.createdAt = storeEntity.getCreatedAt();
         this.updatedAt = storeEntity.getUpdatedAt();
         this.description = storeEntity.getDescription();

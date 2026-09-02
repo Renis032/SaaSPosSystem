@@ -3,21 +3,16 @@ package com.renko.service.impl;
 import com.renko.domain.OrderStatus;
 import com.renko.domain.PaymentType;
 import com.renko.entities.*;
-import com.renko.exceptions.UserException;
 import com.renko.mapper.OrderMapper;
-import com.renko.mapper.ProductMapper;
+import com.renko.mapper.StoreMapper;
 import com.renko.mapper.UserMapper;
 import com.renko.payload.dto.*;
 import com.renko.repository.InventoryRepository;
 import com.renko.repository.OrderRepository;
 import com.renko.repository.ProductRepository;
-import com.renko.service.BillingService;
-import com.renko.service.CustomerService;
-import com.renko.service.OrderService;
-import com.renko.service.UserService;
+import com.renko.service.*;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
-import org.hibernate.query.sqm.spi.CacheabilityInfluencers;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -36,20 +31,25 @@ public class OrderServiceImpl implements OrderService
     private final InventoryRepository inventoryRepository;
     private final BillingService billingService;
     private final CustomerService customerService;
+    private final StoreService storeService;
 
     @Override
     @Transactional
     public OrderDto createOrder(OrderDto orderDto) throws Exception
     {
         UserDto cashier = userService.getCurrentUser();
-        StoreEntity store = cashier.getStoreEntity();
+        StoreDto store = storeService.getStoreById(cashier.getStoreId());
         if(store == null)
         {
             throw new Exception("User's store not found");
         }
 
         CustomerEntity customer = null;
-        if(orderDto.getCustomerPhone() != null && false == orderDto.getCustomerPhone().isEmpty())
+        if(orderDto.getCustomerId() != null)
+        {
+            customer = customerService.getCustomer(orderDto.getCustomerId());
+        }
+        else if(orderDto.getCustomerPhone() != null && false == orderDto.getCustomerPhone().isEmpty())
         {
             List<CustomerEntity> existingCustomers = customerService.searchCustomer(orderDto.getCustomerPhone());
 
@@ -62,18 +62,18 @@ public class OrderServiceImpl implements OrderService
                 customer = new CustomerEntity();
                 customer.setFullName(orderDto.getCustomerName() != null ? orderDto.getCustomerName() : "Guest");
                 customer.setPhone(orderDto.getCustomerPhone());
-                customer.setStoreEntity(store);
+                customer.setStoreEntity(StoreMapper.toEntity(store, UserMapper.toEntity(cashier)));
                 customer = customerService.createCustomer(customer);
             }
         }
 
-        else if(orderDto.getCustomer() != null)
+        else if(customerService.getCustomer(orderDto.getCustomerId()) != null)
         {
-            customer = orderDto.getCustomer();
+            customer = customerService.getCustomer(orderDto.getCustomerId());
         }
 
         OrderEntity order = OrderEntity.builder()
-                .storeEntity(store)
+                .storeEntity(StoreMapper.toEntity(store, UserMapper.toEntity(cashier)))
                 .cashierEntity(UserMapper.toEntity(cashier))
                 .customerEntity(customer)
                 .paymentType(orderDto.getPaymentType())
@@ -128,7 +128,7 @@ public class OrderServiceImpl implements OrderService
         // Validate and deduct inventory BEFORE saving order
         for(OrderItemEntity item : orderItems)
         {
-            InventoryEntity inventory = inventoryRepository.findByStoreEntity_IdAndProductEntity_Id(item.getProductEntity().getId(), store.getId());
+            InventoryEntity inventory = inventoryRepository.findByStoreEntity_IdAndProductEntity_Id(store.getId(), item.getProductEntity().getId());
 
             if(inventory == null)
             {
@@ -150,7 +150,7 @@ public class OrderServiceImpl implements OrderService
     }
 
     @Override
-    public OrderDto updateOrder(Long id, OrderDto orderDto)
+    public OrderDto updateOrder(Long id, OrderDto orderDto) throws Exception
     {
         OrderEntity order = orderRepository.findById(id)
                                            .orElseThrow(() -> new EntityNotFoundException("Order not found with id " + id));
@@ -162,7 +162,7 @@ public class OrderServiceImpl implements OrderService
 
         if(null != order.getCustomerEntity())
         {
-            order.setCustomerEntity(orderDto.getCustomer());
+            order.setCustomerEntity(customerService.getCustomer(orderDto.getCustomerId()));
         }
 
         if(orderDto.getItems() != null && false == orderDto.getItems().isEmpty())
@@ -208,11 +208,11 @@ public class OrderServiceImpl implements OrderService
     }
 
     @Override
-    public List<OrderDto> getOrdersById(Long storeId,
-                                        Long customerId,
-                                        Long cashierId,
-                                        PaymentType paymentType,
-                                        OrderStatus orderStatus)
+    public List<OrderDto> getOrdersByStore(Long storeId,
+                                           Long customerId,
+                                           Long cashierId,
+                                           PaymentType paymentType,
+                                           OrderStatus orderStatus)
     {
         return orderRepository.findByStoreEntity_IdOrderByCreatedAtDesc(storeId).stream()
                 .filter(order -> customerId == null || (order.getCashierEntity() != null && order.getCustomerEntity().getId().equals(customerId)))
@@ -266,7 +266,7 @@ public class OrderServiceImpl implements OrderService
     }
 
     @Override
-    public ReceiptDto generateReceipt(Long orderId)
+    public ReceiptDto getReceipt(Long orderId)
     {
         OrderEntity order = orderRepository.findById(orderId)
                                            .orElseThrow(() -> new EntityNotFoundException("Order not found with id " + orderId));

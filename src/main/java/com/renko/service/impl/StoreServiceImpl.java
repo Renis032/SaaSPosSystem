@@ -106,7 +106,7 @@ public class StoreServiceImpl implements StoreService
             throw  new UserException("No permission.");
         }
 
-        StoreEntity storeEntity = storeRepository.findById(currentUser.getStoreEntity().getId())
+        StoreEntity storeEntity = storeRepository.findById(currentUser.getStoreId())
                                                  .orElseThrow(() -> new Exception("No store found"));
 
         return StoreMapper.toDto(storeEntity);

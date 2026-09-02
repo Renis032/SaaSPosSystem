@@ -5,6 +5,7 @@ import com.renko.domain.UserRole;
 import com.renko.exceptions.UserException;
 import com.renko.mapper.UserMapper;
 import com.renko.entities.UserEntity;
+import com.renko.payload.dto.AuthRequestDto;
 import com.renko.payload.dto.UserDto;
 import com.renko.payload.response.AuthResponse;
 import com.renko.repository.UserRepository;
@@ -32,26 +33,26 @@ public class AuthServiceImpl implements AuthService
     private final CustomUserDetailsService customUserDetailsService;
 
     @Override
-    public AuthResponse signUp(UserDto userDto) throws UserException
+    public AuthResponse signUp(AuthRequestDto authRequestDto) throws UserException
     {
-        UserEntity userEntity = userRepository.findByEmail(userDto.getEmail());
+        UserEntity userEntity = userRepository.findByEmail(authRequestDto.getEmail());
         if(userEntity != null)
         {
             throw new UserException("Email is already registered!");
         }
 
-        if(userDto.getRole() == UserRole.ADMIN &&
+        if(authRequestDto.getRole() == UserRole.ADMIN &&
            userRepository.existsByRole(UserRole.ADMIN))
         {
             throw new UserException("Only one ADMIN allowed!");
         }
 
         UserEntity newUserEntity = new UserEntity();
-        newUserEntity.setEmail(userDto.getEmail());
-        newUserEntity.setPassword(passwordEncoder.encode(userDto.getPassword()));
-        newUserEntity.setRole(userDto.getRole());
-        newUserEntity.setPhoneNumber(userDto.getPhoneNumber());
-        newUserEntity.setFullName(userDto.getFullName());
+        newUserEntity.setEmail(authRequestDto.getEmail());
+        newUserEntity.setPassword(passwordEncoder.encode(authRequestDto.getPassword()));
+        newUserEntity.setRole(authRequestDto.getRole());
+        newUserEntity.setPhoneNumber(authRequestDto.getPhoneNumber());
+        newUserEntity.setFullName(authRequestDto.getFullName());
 
         newUserEntity.setCreatedAt(LocalDateTime.now());
         newUserEntity.setUpdatedAt(LocalDateTime.now());
@@ -64,7 +65,7 @@ public class AuthServiceImpl implements AuthService
         // Create an Authentication object representing the newly registered user
         // At this point this does NOT mean that the user has been fully authenticated
         // It simply creates the authentication information that Spring Security can use
-        Authentication authentication = new UsernamePasswordAuthenticationToken(userDto.getEmail(), userDto.getPassword());
+        Authentication authentication = new UsernamePasswordAuthenticationToken(authRequestDto.getEmail(), authRequestDto.getPassword());
 
         // Store the Authentication object in Spring Security's SecurityContext
         // The SecurityContext represents the currently authenticated user for this request.
@@ -88,10 +89,10 @@ public class AuthServiceImpl implements AuthService
     }
 
     @Override
-    public AuthResponse login(UserDto userDto) throws UserException
+    public AuthResponse login(AuthRequestDto authRequestDto) throws UserException
     {
-        String email = userDto.getEmail();
-        String password = userDto.getPassword();
+        String email = authRequestDto.getEmail();
+        String password = authRequestDto.getPassword();
 
         Authentication authentication = authenticate(email, password);
         SecurityContextHolder.getContext().setAuthentication(authentication);

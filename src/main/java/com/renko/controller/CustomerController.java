@@ -5,6 +5,7 @@ import com.renko.exceptions.UserException;
 import com.renko.payload.dto.UserDto;
 import com.renko.payload.response.ApiResponse;
 import com.renko.service.CustomerService;
+import com.renko.service.StoreService;
 import com.renko.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -19,6 +20,7 @@ public class CustomerController
 {
     private final CustomerService customerService;
     private final UserService userService;
+    private final StoreService storeService;
 
     @PostMapping
     public ResponseEntity<CustomerEntity> createCustomer(@RequestBody CustomerEntity customerEntity,
@@ -52,12 +54,13 @@ public class CustomerController
     }
 
     @GetMapping
-    public ResponseEntity<List<CustomerEntity>> getAllCustomer(@RequestHeader("Authorization") String jwt) throws UserException
+    public ResponseEntity<List<CustomerEntity>> getAllCustomer(@RequestHeader("Authorization") String jwt) throws Exception
     {
-        UserDto userEntity = userService.getUserFromJwtToken(jwt);
-        if(userEntity.getStoreEntity() != null)
+        UserDto userDto = userService.getUserFromJwtToken(jwt);
+        if(userDto.getStoreId() != null)
         {
-            return ResponseEntity.ok(customerService.getCustomersByStoreEntity_Id(userEntity.getStoreEntity().getId()));
+            Long storeId = storeService.getStoreById(userDto.getStoreId()).getId();
+            return ResponseEntity.ok(customerService.getCustomersByStoreEntity_Id(storeId));
         }
 
         return ResponseEntity.ok(customerService.getAllCustomers());

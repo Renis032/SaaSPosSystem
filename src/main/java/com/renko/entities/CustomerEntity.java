@@ -1,5 +1,6 @@
 package com.renko.entities;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -26,7 +27,8 @@ public class CustomerEntity
     private String phone;
 
     @ManyToOne
-    @com.fasterxml.jackson.annotation.JsonIgnoreProperties("storeAdmin")
+    @JsonIgnoreProperties("storeAdmin")
+    @JoinColumn(name = "store_id")
     private StoreEntity storeEntity;
 
     private LocalDateTime createdAt;
