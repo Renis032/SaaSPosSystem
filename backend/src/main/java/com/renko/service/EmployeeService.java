@@ -10,7 +10,10 @@ import java.util.List;
 public interface EmployeeService
 {
     UserDto createStoreEmployee(CreateEmployeeDto employee, Long storeId) throws Exception;
+    UserDto getEmployeeById(Long employeeId) throws Exception;
+    List<UserDto> getAllEmployees();
     UserDto updateStoreEmployee(Long employeeId, UserUpdateDto employeeDto) throws Exception;
     void deleteEmployee(Long employeeId) throws Exception;
+    void deleteAllEmployees() throws Exception;
     List<UserDto> findStoreEmployeesByRole(Long storeId, UserRole role) throws Exception;
 }

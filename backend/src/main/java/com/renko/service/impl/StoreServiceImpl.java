@@ -161,4 +161,10 @@ public class StoreServiceImpl implements StoreService
 
         return StoreMapper.toDto(savedStore);
     }
+
+    @Override
+    public void deleteAllStores() throws UserException
+    {
+        storeRepository.deleteAll();
+    }
 }

@@ -1,8 +1,6 @@
 package com.renko.service;
 
-import com.renko.exceptions.UserException;
 import com.renko.payload.dto.RefundDto;
-import org.springframework.cglib.core.Local;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -26,4 +24,6 @@ public interface RefundService
     RefundDto getRefundById(Long refundId) throws Exception;
 
     void deleteRefund(Long refundId);
+
+    void deleteAllRefunds();
 }

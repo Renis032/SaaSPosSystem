@@ -24,6 +24,12 @@ public class BranchController
         return ResponseEntity.ok(branchService.createBranch(branchDto));
     }
 
+    @GetMapping
+    public ResponseEntity<List<BranchDto>> getAllBranches()
+    {
+        return ResponseEntity.ok(branchService.getAllBranches());
+    }
+
     @PatchMapping("/{id}")
     public ResponseEntity<BranchDto> updateBranch(@PathVariable Long id,
                                                   @RequestBody BranchUpdateDto branchDto) throws Exception
@@ -51,6 +57,16 @@ public class BranchController
         ApiResponse apiResponse = new ApiResponse();
         apiResponse.setMessage("Branch deleted successfully");
 
+        return ResponseEntity.ok(apiResponse);
+    }
+
+    @DeleteMapping
+    public ResponseEntity<ApiResponse> deleteAllBranches()
+    {
+        branchService.deleteAllBranches();
+
+        ApiResponse apiResponse = new ApiResponse();
+        apiResponse.setMessage("All branches deleted successfully");
         return ResponseEntity.ok(apiResponse);
     }
 }

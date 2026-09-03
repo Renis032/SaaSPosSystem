@@ -12,6 +12,7 @@ export function BranchSection({ onRun }: Props) {
     phone: '',
     email: '',
     storeId: '',
+    managerId: '',
     openTime: '09:00:00',
     closeTime: '18:00:00',
     workdays: 'MONDAY,TUESDAY,WEDNESDAY,THURSDAY,FRIDAY',
@@ -24,7 +25,8 @@ export function BranchSection({ onRun }: Props) {
     address: form.address,
     phone: form.phone,
     email: form.email,
-    storeId: Number(form.storeId),
+    storeId: form.storeId ? Number(form.storeId) : undefined,
+    managerId: form.managerId ? Number(form.managerId) : undefined,
     openTime: form.openTime,
     closeTime: form.closeTime,
     workdays: form.workdays.split(',').map((d) => d.trim()).filter(Boolean),
@@ -32,6 +34,22 @@ export function BranchSection({ onRun }: Props) {
 
   return (
     <Section title="Branches" description="/api/branches">
+      <ActionRow title="List">
+        <div className="form-grid">
+          <Field label="Branch id" value={id} onChange={(e) => setId(e.target.value)} />
+          <Field label="Store id" value={storeId} onChange={(e) => setStoreId(e.target.value)} />
+        </div>
+        <button type="button" className="btn" onClick={() => onRun(() => apiClient('/api/branches'))}>
+          GET all
+        </button>
+        <button type="button" className="btn" onClick={() => onRun(() => apiClient(`/api/branches/${id}`))}>
+          GET by id
+        </button>
+        <button type="button" className="btn" onClick={() => onRun(() => apiClient(`/api/branches/stores/${storeId}`))}>
+          GET by store
+        </button>
+      </ActionRow>
+
       <ActionRow title="Create / update">
         <div className="form-grid">
           <Field label="Name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
@@ -39,6 +57,7 @@ export function BranchSection({ onRun }: Props) {
           <Field label="Phone" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
           <Field label="Email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
           <Field label="Store id" value={form.storeId} onChange={(e) => setForm({ ...form, storeId: e.target.value })} />
+          <Field label="Manager id" value={form.managerId} onChange={(e) => setForm({ ...form, managerId: e.target.value })} />
           <Field label="Open time" value={form.openTime} onChange={(e) => setForm({ ...form, openTime: e.target.value })} hint="HH:mm:ss" />
           <Field label="Close time" value={form.closeTime} onChange={(e) => setForm({ ...form, closeTime: e.target.value })} hint="HH:mm:ss" />
           <Field label="Workdays" value={form.workdays} onChange={(e) => setForm({ ...form, workdays: e.target.value })} hint="Comma separated" />
@@ -52,19 +71,21 @@ export function BranchSection({ onRun }: Props) {
         </button>
       </ActionRow>
 
-      <ActionRow title="Read / delete">
+      <ActionRow title="Delete">
         <div className="form-grid">
           <Field label="Branch id" value={id} onChange={(e) => setId(e.target.value)} />
-          <Field label="Store id" value={storeId} onChange={(e) => setStoreId(e.target.value)} />
         </div>
-        <button type="button" className="btn" onClick={() => onRun(() => apiClient(`/api/branches/${id}`))}>
-          GET branch
-        </button>
-        <button type="button" className="btn" onClick={() => onRun(() => apiClient(`/api/branches/stores/${storeId}`))}>
-          GET by store
-        </button>
         <button type="button" className="btn btn-danger" onClick={() => onRun(() => apiClient(`/api/branches/${id}`, { method: 'DELETE' }))}>
-          Delete
+          Delete by id
+        </button>
+        <button
+          type="button"
+          className="btn btn-danger"
+          onClick={() => {
+            if (window.confirm('Delete ALL branches?')) onRun(() => apiClient('/api/branches', { method: 'DELETE' }))
+          }}
+        >
+          Delete all
         </button>
       </ActionRow>
     </Section>

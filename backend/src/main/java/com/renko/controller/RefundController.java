@@ -24,6 +24,12 @@ public class RefundController
         return ResponseEntity.ok(refundService.createRefund(refundDto));
     }
 
+    @GetMapping
+    public ResponseEntity<List<RefundDto>> getAllRefunds()
+    {
+        return ResponseEntity.ok(refundService.getAllRefunds());
+    }
+
     @GetMapping("/cashier/{cashierId}")
     public ResponseEntity<List<RefundDto>> getRefundsByCashier(@PathVariable Long cashierId)
     {
@@ -42,8 +48,8 @@ public class RefundController
         return ResponseEntity.ok(refundService.getRefundByShiftReport(shiftId));
     }
 
-    @GetMapping("/{Id}")
-    public ResponseEntity<RefundDto> getRefundsById(@PathVariable Long id) throws Exception
+    @GetMapping("/{id}")
+    public ResponseEntity<RefundDto> getRefundById(@PathVariable Long id) throws Exception
     {
         return ResponseEntity.ok(refundService.getRefundById(id));
     }
@@ -64,6 +70,16 @@ public class RefundController
         ApiResponse apiResponse = new ApiResponse();
         apiResponse.setMessage("Successfully deleted refund");
 
+        return ResponseEntity.ok(apiResponse);
+    }
+
+    @DeleteMapping
+    public ResponseEntity<ApiResponse> deleteAllRefunds()
+    {
+        refundService.deleteAllRefunds();
+
+        ApiResponse apiResponse = new ApiResponse();
+        apiResponse.setMessage("All refunds deleted successfully");
         return ResponseEntity.ok(apiResponse);
     }
 }

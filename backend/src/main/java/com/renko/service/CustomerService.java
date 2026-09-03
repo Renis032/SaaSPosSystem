@@ -13,4 +13,5 @@ public interface CustomerService
     List<CustomerEntity> getAllCustomers();
     List<CustomerEntity> getCustomersByStoreEntity_Id(Long id);
     List<CustomerEntity> searchCustomer(String keyword);
+    void deleteAllCustomers();
 }

@@ -15,5 +15,6 @@ public interface UserService
     List<UserDto> getAllUsers();
     UserDto getAdminUser() throws UserException;
 
-    void deleteById(Long id);
+    void deleteById(Long id) throws UserException;
+    void deleteAllUsers() throws UserException;
 }

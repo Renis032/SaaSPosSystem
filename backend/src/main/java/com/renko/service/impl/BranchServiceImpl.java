@@ -70,6 +70,14 @@ public class BranchServiceImpl implements BranchService
     }
 
     @Override
+    public List<BranchDto> getAllBranches()
+    {
+        return branchRepository.findAll().stream()
+                .map(BranchMapper::toDto)
+                .collect(Collectors.toList());
+    }
+
+    @Override
     public void deleteBranch(Long id) throws Exception
     {
         BranchEntity branchEntity = branchRepository.findById(id)
@@ -79,10 +87,15 @@ public class BranchServiceImpl implements BranchService
     }
 
     @Override
+    public void deleteAllBranches()
+    {
+        branchRepository.deleteAll();
+    }
+
+    @Override
     public List<BranchDto> getAllBranchesByStoreId(Long id)
     {
-        List<BranchEntity> branches = branchRepository.findAll();
-        return branches.stream()
+        return branchRepository.findByStoreEntity_Id(id).stream()
                        .map(BranchMapper::toDto)
                        .collect(Collectors.toList());
     }

@@ -25,30 +25,18 @@ export function InventorySection({ onRun }: Props) {
 
   return (
     <Section title="Inventory" description="/api/inventories">
-      <ActionRow title="Create / update">
+      <ActionRow title="List">
         <div className="form-grid">
-          <Field label="Store id" value={form.storeId} onChange={(e) => setForm({ ...form, storeId: e.target.value })} />
-          <Field label="Product id" value={form.productId} onChange={(e) => setForm({ ...form, productId: e.target.value })} />
-          <Field label="Quantity" value={form.quantity} onChange={(e) => setForm({ ...form, quantity: e.target.value })} />
-          <Field label="Low stock threshold" value={form.lowStockThreshold} onChange={(e) => setForm({ ...form, lowStockThreshold: e.target.value })} />
-          <Field label="Inventory id (update)" value={id} onChange={(e) => setId(e.target.value)} />
-        </div>
-        <button type="button" className="btn" onClick={() => onRun(() => apiClient('/api/inventories', { method: 'POST', body }))}>
-          Create
-        </button>
-        <button type="button" className="btn" onClick={() => onRun(() => apiClient(`/api/inventories/${id}`, { method: 'PUT', body }))}>
-          Update
-        </button>
-      </ActionRow>
-
-      <ActionRow title="Queries / stock ops">
-        <div className="form-grid">
-          <Field label="Store id" value={form.storeId} onChange={(e) => setForm({ ...form, storeId: e.target.value })} />
-          <Field label="Product id" value={form.productId} onChange={(e) => setForm({ ...form, productId: e.target.value })} />
           <Field label="Inventory id" value={id} onChange={(e) => setId(e.target.value)} />
-          <Field label="Add quantity" value={addQty} onChange={(e) => setAddQty(e.target.value)} />
-          <Field label="New threshold" value={threshold} onChange={(e) => setThreshold(e.target.value)} />
+          <Field label="Store id" value={form.storeId} onChange={(e) => setForm({ ...form, storeId: e.target.value })} />
+          <Field label="Product id" value={form.productId} onChange={(e) => setForm({ ...form, productId: e.target.value })} />
         </div>
+        <button type="button" className="btn" onClick={() => onRun(() => apiClient('/api/inventories'))}>
+          GET all
+        </button>
+        <button type="button" className="btn" onClick={() => onRun(() => apiClient(`/api/inventories/${id}`))}>
+          GET by id
+        </button>
         <button type="button" className="btn" onClick={() => onRun(() => apiClient(`/api/inventories/store/${form.storeId}`))}>
           GET by store
         </button>
@@ -57,10 +45,28 @@ export function InventorySection({ onRun }: Props) {
           className="btn"
           onClick={() => onRun(() => apiClient(`/api/inventories/store/${form.storeId}/product/${form.productId}`))}
         >
-          GET by product
+          GET by store + product
         </button>
         <button type="button" className="btn" onClick={() => onRun(() => apiClient(`/api/inventories/store/${form.storeId}/low-stock`))}>
           Low stock
+        </button>
+      </ActionRow>
+
+      <ActionRow title="Create / update / stock ops">
+        <div className="form-grid">
+          <Field label="Store id" value={form.storeId} onChange={(e) => setForm({ ...form, storeId: e.target.value })} />
+          <Field label="Product id" value={form.productId} onChange={(e) => setForm({ ...form, productId: e.target.value })} />
+          <Field label="Quantity" value={form.quantity} onChange={(e) => setForm({ ...form, quantity: e.target.value })} />
+          <Field label="Low stock threshold" value={form.lowStockThreshold} onChange={(e) => setForm({ ...form, lowStockThreshold: e.target.value })} />
+          <Field label="Inventory id" value={id} onChange={(e) => setId(e.target.value)} />
+          <Field label="Add quantity" value={addQty} onChange={(e) => setAddQty(e.target.value)} />
+          <Field label="New threshold" value={threshold} onChange={(e) => setThreshold(e.target.value)} />
+        </div>
+        <button type="button" className="btn" onClick={() => onRun(() => apiClient('/api/inventories', { method: 'POST', body }))}>
+          Create
+        </button>
+        <button type="button" className="btn" onClick={() => onRun(() => apiClient(`/api/inventories/${id}`, { method: 'PUT', body }))}>
+          Update
         </button>
         <button
           type="button"
@@ -72,12 +78,27 @@ export function InventorySection({ onRun }: Props) {
         <button
           type="button"
           className="btn"
-          onClick={() => onRun(() => apiClient(`/api/inventories/${id}/threshold?threshold=${threshold}`))}
+          onClick={() => onRun(() => apiClient(`/api/inventories/${id}/threshold?threshold=${threshold}`, { method: 'PATCH' }))}
         >
           Set threshold
         </button>
+      </ActionRow>
+
+      <ActionRow title="Delete">
+        <div className="form-grid">
+          <Field label="Inventory id" value={id} onChange={(e) => setId(e.target.value)} />
+        </div>
         <button type="button" className="btn btn-danger" onClick={() => onRun(() => apiClient(`/api/inventories/${id}`, { method: 'DELETE' }))}>
-          Delete
+          Delete by id
+        </button>
+        <button
+          type="button"
+          className="btn btn-danger"
+          onClick={() => {
+            if (window.confirm('Delete ALL inventory rows?')) onRun(() => apiClient('/api/inventories', { method: 'DELETE' }))
+          }}
+        >
+          Delete all
         </button>
       </ActionRow>
     </Section>

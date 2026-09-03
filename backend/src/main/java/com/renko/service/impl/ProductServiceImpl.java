@@ -57,6 +57,22 @@ public class ProductServiceImpl implements ProductService
     }
 
     @Override
+    public ProductDto getProductById(Long id) throws Exception
+    {
+        ProductEntity productEntity = productRepository.findById(id)
+                .orElseThrow(() -> new Exception("Product not found with id: " + id));
+        return ProductMapper.toDto(productEntity);
+    }
+
+    @Override
+    public List<ProductDto> getAllProducts()
+    {
+        return productRepository.findAll().stream()
+                .map(ProductMapper::toDto)
+                .collect(Collectors.toList());
+    }
+
+    @Override
     public ProductDto updateProduct(Long id, ProductUpdateDto productDto) throws Exception
     {
         ProductEntity productEntity = productRepository.findById(id)
@@ -86,6 +102,12 @@ public class ProductServiceImpl implements ProductService
                                                                + "; cannot delete (requested by userId=" + (userEntity != null ? userEntity.getId() : null) + ")"));
 
         productRepository.delete(productEntity);
+    }
+
+    @Override
+    public void deleteAllProducts()
+    {
+        productRepository.deleteAll();
     }
 
     @Override

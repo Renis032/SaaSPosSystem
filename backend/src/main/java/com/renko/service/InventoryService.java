@@ -11,8 +11,10 @@ public interface InventoryService
     InventoryDto createInventory(InventoryDto inventoryDto) throws Exception;
     InventoryDto updateInventory(Long id, InventoryUpdateDto inventoryDt) throws Exception;
     ApiResponse deleteInventory(Long id);
+    void deleteAllInventories();
     InventoryDto getInventoryById(Long id) throws Exception;
-    InventoryDto getInventoryByStoreIdAndProductId(Long productId, Long storeId);
+    List<InventoryDto> getAllInventories();
+    InventoryDto getInventoryByStoreIdAndProductId(Long storeId, Long productId);
     List<InventoryDto> getInventoryByStoreId(Long storeId);
     List<InventoryDto> getLowStockByStoreId(Long storeId);
     InventoryDto updateLowStockThreshold(Long id, Integer threshold) throws Exception;

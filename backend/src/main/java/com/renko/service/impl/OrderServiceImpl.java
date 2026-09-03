@@ -228,6 +228,14 @@ public class OrderServiceImpl implements OrderService
     }
 
     @Override
+    public List<OrderDto> getAllOrders()
+    {
+        return orderRepository.findAll().stream()
+                .map(OrderMapper::toDto)
+                .collect(Collectors.toList());
+    }
+
+    @Override
     public List<OrderDto> getOrdersByStore(Long storeId,
                                            Long customerId,
                                            Long cashierId,
@@ -255,6 +263,12 @@ public class OrderServiceImpl implements OrderService
     {
         OrderEntity orderEntity = orderRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("Order not found with id: " + id));
         orderRepository.delete(orderEntity);
+    }
+
+    @Override
+    public void deleteAllOrders()
+    {
+        orderRepository.deleteAll();
     }
 
     @Override

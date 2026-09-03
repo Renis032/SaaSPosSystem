@@ -89,4 +89,13 @@ public class StoreController
 
         return ResponseEntity.ok(apiResponse);
     }
+
+    @DeleteMapping
+    public ResponseEntity<ApiResponse> deleteAllStores() throws UserException
+    {
+        storeService.deleteAllStores();
+        ApiResponse apiResponse = new ApiResponse();
+        apiResponse.setMessage("All stores deleted successfully");
+        return ResponseEntity.ok(apiResponse);
+    }
 }

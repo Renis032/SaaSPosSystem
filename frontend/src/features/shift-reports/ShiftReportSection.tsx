@@ -25,13 +25,16 @@ export function ShiftReportSection({ onRun }: Props) {
         </button>
       </ActionRow>
 
-      <ActionRow title="Queries">
+      <ActionRow title="List">
         <div className="form-grid">
           <Field label="Shift id" value={id} onChange={(e) => setId(e.target.value)} />
           <Field label="Cashier id" value={cashierId} onChange={(e) => setCashierId(e.target.value)} />
           <Field label="Store id" value={storeId} onChange={(e) => setStoreId(e.target.value)} />
           <Field label="Date" value={date} onChange={(e) => setDate(e.target.value)} hint="ISO datetime" />
         </div>
+        <button type="button" className="btn" onClick={() => onRun(() => apiClient('/api/shift-report'))}>
+          GET all
+        </button>
         <button type="button" className="btn" onClick={() => onRun(() => apiClient(`/api/shift-report/${id}`))}>
           GET by id
         </button>
@@ -42,15 +45,31 @@ export function ShiftReportSection({ onRun }: Props) {
           type="button"
           className="btn"
           onClick={() =>
-            onRun(() =>
-              apiClient(`/api/shift-report/cashier/${cashierId}/by-date?date=${encodeURIComponent(date)}`),
-            )
+            onRun(() => apiClient(`/api/shift-report/cashier/${cashierId}/by-date?date=${encodeURIComponent(date)}`))
           }
         >
           By cashier + date
         </button>
         <button type="button" className="btn" onClick={() => onRun(() => apiClient(`/api/shift-report/store/${storeId}`))}>
           By store
+        </button>
+      </ActionRow>
+
+      <ActionRow title="Delete">
+        <div className="form-grid">
+          <Field label="Shift id" value={id} onChange={(e) => setId(e.target.value)} />
+        </div>
+        <button type="button" className="btn btn-danger" onClick={() => onRun(() => apiClient(`/api/shift-report/${id}`, { method: 'DELETE' }))}>
+          Delete by id
+        </button>
+        <button
+          type="button"
+          className="btn btn-danger"
+          onClick={() => {
+            if (window.confirm('Delete ALL shift reports?')) onRun(() => apiClient('/api/shift-report', { method: 'DELETE' }))
+          }}
+        >
+          Delete all
         </button>
       </ActionRow>
     </Section>

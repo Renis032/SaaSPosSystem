@@ -91,12 +91,26 @@ public class InventoryServiceImpl implements InventoryService
     }
 
     @Override
+    public void deleteAllInventories()
+    {
+        inventoryRepository.deleteAll();
+    }
+
+    @Override
     public InventoryDto getInventoryById(Long id) throws Exception
     {
         InventoryEntity inventoryEntity = inventoryRepository.findById(id)
                                                              .orElseThrow(() -> new Exception("Inventory not found with id: " + id));
 
         return InventoryMapper.toDto(inventoryEntity);
+    }
+
+    @Override
+    public List<InventoryDto> getAllInventories()
+    {
+        return inventoryRepository.findAll().stream()
+                .map(InventoryMapper::toDto)
+                .collect(Collectors.toList());
     }
 
     @Override

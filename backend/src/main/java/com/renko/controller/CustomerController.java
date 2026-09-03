@@ -66,6 +66,12 @@ public class CustomerController
         return ResponseEntity.ok(customerService.getAllCustomers());
     }
 
+    @GetMapping("/store/{storeId}")
+    public ResponseEntity<List<CustomerEntity>> getCustomersByStore(@PathVariable Long storeId)
+    {
+        return ResponseEntity.ok(customerService.getCustomersByStoreEntity_Id(storeId));
+    }
+
     @GetMapping("/search")
     public ResponseEntity<List<CustomerEntity>> searchCustomer(@RequestParam String keyword)
     {
@@ -76,5 +82,15 @@ public class CustomerController
     public ResponseEntity<CustomerEntity> getCustomerById(@PathVariable Long id) throws Exception
     {
         return ResponseEntity.ok(customerService.getCustomer(id));
+    }
+
+    @DeleteMapping
+    public ResponseEntity<ApiResponse> deleteAllCustomers()
+    {
+        customerService.deleteAllCustomers();
+
+        ApiResponse apiResponse = new ApiResponse();
+        apiResponse.setMessage("All customers deleted successfully");
+        return ResponseEntity.ok(apiResponse);
     }
 }

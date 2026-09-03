@@ -26,26 +26,7 @@ export function RefundSection({ onRun }: Props) {
 
   return (
     <Section title="Refunds" description="/api/refunds">
-      <ActionRow title="Create refund">
-        <div className="form-grid">
-          <Field label="Order id" value={form.orderId} onChange={(e) => setForm({ ...form, orderId: e.target.value })} />
-          <Field label="Reason" value={form.reason} onChange={(e) => setForm({ ...form, reason: e.target.value })} />
-          <Field label="Amount" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} />
-          <Field
-            as="select"
-            label="Payment type"
-            value={form.paymentType}
-            options={toOptions(PAYMENT_TYPES)}
-            onChange={(e) => setForm({ ...form, paymentType: e.target.value })}
-          />
-          <Field label="Shift report id" value={form.shiftReportId} onChange={(e) => setForm({ ...form, shiftReportId: e.target.value })} />
-        </div>
-        <button type="button" className="btn" onClick={() => onRun(() => apiClient('/api/refunds', { method: 'POST', body }))}>
-          Create
-        </button>
-      </ActionRow>
-
-      <ActionRow title="Queries / delete">
+      <ActionRow title="List">
         <div className="form-grid">
           <Field label="Refund id" value={ids.id} onChange={(e) => setIds({ ...ids, id: e.target.value })} />
           <Field label="Cashier id" value={ids.cashierId} onChange={(e) => setIds({ ...ids, cashierId: e.target.value })} />
@@ -54,6 +35,9 @@ export function RefundSection({ onRun }: Props) {
           <Field label="Range start" value={ids.start} onChange={(e) => setIds({ ...ids, start: e.target.value })} hint="ISO datetime" />
           <Field label="Range end" value={ids.end} onChange={(e) => setIds({ ...ids, end: e.target.value })} hint="ISO datetime" />
         </div>
+        <button type="button" className="btn" onClick={() => onRun(() => apiClient('/api/refunds'))}>
+          GET all
+        </button>
         <button type="button" className="btn" onClick={() => onRun(() => apiClient(`/api/refunds/${ids.id}`))}>
           GET by id
         </button>
@@ -79,8 +63,42 @@ export function RefundSection({ onRun }: Props) {
         >
           Cashier range
         </button>
+      </ActionRow>
+
+      <ActionRow title="Create">
+        <div className="form-grid">
+          <Field label="Order id" value={form.orderId} onChange={(e) => setForm({ ...form, orderId: e.target.value })} />
+          <Field label="Reason" value={form.reason} onChange={(e) => setForm({ ...form, reason: e.target.value })} />
+          <Field label="Amount" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} />
+          <Field
+            as="select"
+            label="Payment type"
+            value={form.paymentType}
+            options={toOptions(PAYMENT_TYPES)}
+            onChange={(e) => setForm({ ...form, paymentType: e.target.value })}
+          />
+          <Field label="Shift report id" value={form.shiftReportId} onChange={(e) => setForm({ ...form, shiftReportId: e.target.value })} />
+        </div>
+        <button type="button" className="btn" onClick={() => onRun(() => apiClient('/api/refunds', { method: 'POST', body }))}>
+          Create
+        </button>
+      </ActionRow>
+
+      <ActionRow title="Delete">
+        <div className="form-grid">
+          <Field label="Refund id" value={ids.id} onChange={(e) => setIds({ ...ids, id: e.target.value })} />
+        </div>
         <button type="button" className="btn btn-danger" onClick={() => onRun(() => apiClient(`/api/refunds/${ids.id}`, { method: 'DELETE' }))}>
-          Delete
+          Delete by id
+        </button>
+        <button
+          type="button"
+          className="btn btn-danger"
+          onClick={() => {
+            if (window.confirm('Delete ALL refunds?')) onRun(() => apiClient('/api/refunds', { method: 'DELETE' }))
+          }}
+        >
+          Delete all
         </button>
       </ActionRow>
     </Section>

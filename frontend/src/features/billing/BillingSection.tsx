@@ -7,6 +7,7 @@ type Props = { onRun: <T>(action: () => Promise<T>) => Promise<T> }
 
 export function BillingSection({ onRun }: Props) {
   const [amountCents, setAmountCents] = useState('1000')
+  const [paymentIntentId, setPaymentIntentId] = useState('')
   const [refund, setRefund] = useState({ paymentIntentId: '', amountCents: '', reason: 'requested_by_customer' })
 
   return (
@@ -14,6 +15,7 @@ export function BillingSection({ onRun }: Props) {
       <ActionRow title="Payment intent">
         <div className="form-grid">
           <Field label="Amount (cents)" value={amountCents} onChange={(e) => setAmountCents(e.target.value)} />
+          <Field label="Payment intent id (verify)" value={paymentIntentId} onChange={(e) => setPaymentIntentId(e.target.value)} />
         </div>
         <button
           type="button"
@@ -28,6 +30,20 @@ export function BillingSection({ onRun }: Props) {
           }
         >
           Create payment intent
+        </button>
+        <button
+          type="button"
+          className="btn"
+          onClick={() =>
+            onRun(() =>
+              apiClient('/api/billing/verify', {
+                method: 'POST',
+                body: { paymentIntentId },
+              }),
+            )
+          }
+        >
+          Verify payment
         </button>
       </ActionRow>
 

@@ -210,6 +210,20 @@ public class ShiftReportServiceImpl implements ShiftReportService
         return ShiftReportMapper.toDto(report);
     }
 
+    @Override
+    public void deleteShiftReport(Long id) throws Exception
+    {
+        ShiftReportEntity report = shiftReportRepository.findById(id)
+                .orElseThrow(() -> new Exception("Shift report not found with id: " + id + "; cannot delete"));
+        shiftReportRepository.delete(report);
+    }
+
+    @Override
+    public void deleteAllShiftReports()
+    {
+        shiftReportRepository.deleteAll();
+    }
+
     private List<PaymentSummaryEntity> getPaymentSummaries(List<OrderEntity> orders, double totalSales)
     {
         Map<PaymentType, List<OrderEntity>> grouped = orders.stream()

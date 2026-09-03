@@ -45,7 +45,51 @@ export function OrderSection({ onRun }: Props) {
 
   return (
     <Section title="Orders" description="/api/orders — create with one line item for quick testing">
-      <ActionRow title="Create order">
+      <ActionRow title="List">
+        <div className="form-grid">
+          <Field label="Order id" value={id} onChange={(e) => setId(e.target.value)} />
+          <Field label="Store id" value={form.storeId} onChange={(e) => setForm({ ...form, storeId: e.target.value })} />
+          <Field label="Customer id" value={form.customerId} onChange={(e) => setForm({ ...form, customerId: e.target.value })} />
+          <Field label="Cashier id" value={cashierId} onChange={(e) => setCashierId(e.target.value)} />
+          <Field
+            as="select"
+            label="Order status filter"
+            value={orderStatus}
+            options={[{ value: '', label: '(any)' }, ...toOptions(ORDER_STATUSES)]}
+            onChange={(e) => setOrderStatus(e.target.value)}
+          />
+        </div>
+        <button type="button" className="btn" onClick={() => onRun(() => apiClient('/api/orders'))}>
+          GET all
+        </button>
+        <button type="button" className="btn" onClick={() => onRun(() => apiClient(`/api/orders/${id}`))}>
+          GET by id
+        </button>
+        <button
+          type="button"
+          className="btn"
+          onClick={() => onRun(() => apiClient(`/api/orders/store/${form.storeId}${listQs ? `?${listQs}` : ''}`))}
+        >
+          GET by store
+        </button>
+        <button type="button" className="btn" onClick={() => onRun(() => apiClient(`/api/orders/customer/${form.customerId}`))}>
+          GET by customer
+        </button>
+        <button type="button" className="btn" onClick={() => onRun(() => apiClient(`/api/orders/cashier/${cashierId}`))}>
+          GET by cashier
+        </button>
+        <button type="button" className="btn" onClick={() => onRun(() => apiClient(`/api/orders/today/store/${form.storeId}`))}>
+          Today
+        </button>
+        <button type="button" className="btn" onClick={() => onRun(() => apiClient(`/api/orders/recent/store/${form.storeId}`))}>
+          Recent
+        </button>
+        <button type="button" className="btn" onClick={() => onRun(() => apiClient(`/api/orders/${id}/receipt`))}>
+          Receipt
+        </button>
+      </ActionRow>
+
+      <ActionRow title="Create">
         <div className="form-grid">
           <Field label="Store id" value={form.storeId} onChange={(e) => setForm({ ...form, storeId: e.target.value })} />
           <Field label="Customer id" value={form.customerId} onChange={(e) => setForm({ ...form, customerId: e.target.value })} />
@@ -72,43 +116,21 @@ export function OrderSection({ onRun }: Props) {
         </button>
       </ActionRow>
 
-      <ActionRow title="Queries / receipt / delete">
+      <ActionRow title="Delete">
         <div className="form-grid">
           <Field label="Order id" value={id} onChange={(e) => setId(e.target.value)} />
-          <Field label="Store id" value={form.storeId} onChange={(e) => setForm({ ...form, storeId: e.target.value })} />
-          <Field label="Cashier id" value={cashierId} onChange={(e) => setCashierId(e.target.value)} />
-          <Field
-            as="select"
-            label="Order status filter"
-            value={orderStatus}
-            options={[{ value: '', label: '(any)' }, ...toOptions(ORDER_STATUSES)]}
-            onChange={(e) => setOrderStatus(e.target.value)}
-          />
         </div>
-        <button type="button" className="btn" onClick={() => onRun(() => apiClient(`/api/orders/${id}`))}>
-          GET by id
+        <button type="button" className="btn btn-danger" onClick={() => onRun(() => apiClient(`/api/orders/${id}`, { method: 'DELETE' }))}>
+          Delete by id
         </button>
         <button
           type="button"
-          className="btn"
-          onClick={() => onRun(() => apiClient(`/api/orders/store/${form.storeId}${listQs ? `?${listQs}` : ''}`))}
+          className="btn btn-danger"
+          onClick={() => {
+            if (window.confirm('Delete ALL orders?')) onRun(() => apiClient('/api/orders', { method: 'DELETE' }))
+          }}
         >
-          GET by store
-        </button>
-        <button type="button" className="btn" onClick={() => onRun(() => apiClient(`/api/orders/today/store/${form.storeId}`))}>
-          Today
-        </button>
-        <button type="button" className="btn" onClick={() => onRun(() => apiClient(`/api/orders/recent/store/${form.storeId}`))}>
-          Recent
-        </button>
-        <button type="button" className="btn" onClick={() => onRun(() => apiClient(`/api/orders/cashier/${cashierId}`))}>
-          By cashier
-        </button>
-        <button type="button" className="btn" onClick={() => onRun(() => apiClient(`/api/orders/${id}/receipt`))}>
-          Receipt
-        </button>
-        <button type="button" className="btn btn-danger" onClick={() => onRun(() => apiClient(`/api/orders/${id}`, { method: 'DELETE' }))}>
-          Delete
+          Delete all
         </button>
       </ActionRow>
     </Section>

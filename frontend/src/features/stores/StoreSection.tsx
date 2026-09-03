@@ -20,11 +20,28 @@ export function StoreSection({ onRun }: Props) {
   const [id, setId] = useState('')
   const [status, setStatus] = useState('ACTIVE')
 
+  const body = {
+    brandName: create.brandName,
+    description: create.description,
+    storeType: create.storeType,
+    contact: {
+      email: create.contactEmail,
+      phone: create.contactPhone,
+      address: create.contactAddress,
+    },
+  }
+
   return (
     <Section title="Stores" description="/api/stores">
-      <ActionRow title="List / mine">
+      <ActionRow title="List">
+        <div className="form-grid">
+          <Field label="Store id" value={id} onChange={(e) => setId(e.target.value)} />
+        </div>
         <button type="button" className="btn" onClick={() => onRun(() => apiClient('/api/stores'))}>
           GET all
+        </button>
+        <button type="button" className="btn" onClick={() => onRun(() => apiClient(`/api/stores/${id}`))}>
+          GET by id
         </button>
         <button type="button" className="btn" onClick={() => onRun(() => apiClient('/api/stores/admin'))}>
           GET admin store
@@ -34,7 +51,7 @@ export function StoreSection({ onRun }: Props) {
         </button>
       </ActionRow>
 
-      <ActionRow title="Create store">
+      <ActionRow title="Create / update / moderate">
         <div className="form-grid">
           <Field label="Brand name" value={create.brandName} onChange={(e) => setCreate({ ...create, brandName: e.target.value })} />
           <Field label="Store type" value={create.storeType} onChange={(e) => setCreate({ ...create, storeType: e.target.value })} />
@@ -42,62 +59,14 @@ export function StoreSection({ onRun }: Props) {
           <Field label="Contact email" value={create.contactEmail} onChange={(e) => setCreate({ ...create, contactEmail: e.target.value })} />
           <Field label="Contact phone" value={create.contactPhone} onChange={(e) => setCreate({ ...create, contactPhone: e.target.value })} />
           <Field label="Contact address" value={create.contactAddress} onChange={(e) => setCreate({ ...create, contactAddress: e.target.value })} />
-        </div>
-        <button
-          type="button"
-          className="btn"
-          onClick={() =>
-            onRun(() =>
-              apiClient('/api/stores', {
-                method: 'POST',
-                body: {
-                  brandName: create.brandName,
-                  description: create.description,
-                  storeType: create.storeType,
-                  contact: {
-                    email: create.contactEmail,
-                    phone: create.contactPhone,
-                    address: create.contactAddress,
-                  },
-                },
-              }),
-            )
-          }
-        >
-          Create
-        </button>
-      </ActionRow>
-
-      <ActionRow title="By id / moderate / delete">
-        <div className="form-grid">
           <Field label="Store id" value={id} onChange={(e) => setId(e.target.value)} />
           <Field as="select" label="Status" value={status} options={toOptions(STORE_STATUSES)} onChange={(e) => setStatus(e.target.value)} />
         </div>
-        <button type="button" className="btn" onClick={() => onRun(() => apiClient(`/api/stores/${id}`))}>
-          GET by id
+        <button type="button" className="btn" onClick={() => onRun(() => apiClient('/api/stores', { method: 'POST', body }))}>
+          Create
         </button>
-        <button
-          type="button"
-          className="btn"
-          onClick={() =>
-            onRun(() =>
-              apiClient(`/api/stores/${id}`, {
-                method: 'PUT',
-                body: {
-                  brandName: create.brandName,
-                  description: create.description,
-                  storeType: create.storeType,
-                  contact: {
-                    email: create.contactEmail,
-                    phone: create.contactPhone,
-                    address: create.contactAddress,
-                  },
-                },
-              }),
-            )
-          }
-        >
-          Update (uses create fields)
+        <button type="button" className="btn" onClick={() => onRun(() => apiClient(`/api/stores/${id}`, { method: 'PUT', body }))}>
+          Update
         </button>
         <button
           type="button"
@@ -106,8 +75,23 @@ export function StoreSection({ onRun }: Props) {
         >
           Moderate status
         </button>
+      </ActionRow>
+
+      <ActionRow title="Delete">
+        <div className="form-grid">
+          <Field label="Store id" value={id} onChange={(e) => setId(e.target.value)} />
+        </div>
         <button type="button" className="btn btn-danger" onClick={() => onRun(() => apiClient(`/api/stores/${id}`, { method: 'DELETE' }))}>
-          Delete
+          Delete by id
+        </button>
+        <button
+          type="button"
+          className="btn btn-danger"
+          onClick={() => {
+            if (window.confirm('Delete ALL stores?')) onRun(() => apiClient('/api/stores', { method: 'DELETE' }))
+          }}
+        >
+          Delete all
         </button>
       </ActionRow>
     </Section>

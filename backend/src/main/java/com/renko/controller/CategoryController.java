@@ -1,6 +1,5 @@
 package com.renko.controller;
 
-import com.renko.entities.StoreEntity;
 import com.renko.payload.dto.CategoryDto;
 import com.renko.payload.response.ApiResponse;
 import com.renko.service.CategoryService;
@@ -23,6 +22,18 @@ public class CategoryController
         return ResponseEntity.ok(categoryService.createCategoryDto(categoryDto));
     }
 
+    @GetMapping
+    public ResponseEntity<List<CategoryDto>> getAllCategories()
+    {
+        return ResponseEntity.ok(categoryService.getAllCategories());
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<CategoryDto> getCategoryById(@PathVariable Long id) throws Exception
+    {
+        return ResponseEntity.ok(categoryService.getCategoryById(id));
+    }
+
     @GetMapping("/store/{storeId}")
     public ResponseEntity<List<CategoryDto>> getCategoriesByStoreId(@PathVariable Long storeId)
     {
@@ -43,6 +54,16 @@ public class CategoryController
 
         ApiResponse apiResponse = new ApiResponse();
         apiResponse.setMessage("Category deleted successfully");
+        return ResponseEntity.ok(apiResponse);
+    }
+
+    @DeleteMapping
+    public ResponseEntity<ApiResponse> deleteAllCategories()
+    {
+        categoryService.deleteAllCategories();
+
+        ApiResponse apiResponse = new ApiResponse();
+        apiResponse.setMessage("All categories deleted successfully");
         return ResponseEntity.ok(apiResponse);
     }
 }

@@ -10,27 +10,45 @@ export function UserSection({ onRun }: Props) {
 
   return (
     <Section title="Users" description="/api/users">
-      <ActionRow title="Profile / list">
+      <ActionRow title="List">
+        <div className="form-grid">
+          <Field label="User id" value={id} onChange={(e) => setId(e.target.value)} />
+        </div>
+        <button type="button" className="btn" onClick={() => onRun(() => apiClient('/api/users'))}>
+          GET all
+        </button>
+        <button type="button" className="btn" onClick={() => onRun(() => apiClient(`/api/users/${id}`))}>
+          GET by id
+        </button>
         <button type="button" className="btn" onClick={() => onRun(() => apiClient('/api/users/profile'))}>
           My profile
         </button>
         <button type="button" className="btn" onClick={() => onRun(() => apiClient('/api/users/admin'))}>
           Admin user
         </button>
-        <button type="button" className="btn" onClick={() => onRun(() => apiClient('/api/users'))}>
-          List users
-        </button>
       </ActionRow>
 
-      <ActionRow title="By id">
+      <ActionRow title="Delete">
         <div className="form-grid">
           <Field label="User id" value={id} onChange={(e) => setId(e.target.value)} />
         </div>
-        <button type="button" className="btn" onClick={() => onRun(() => apiClient(`/api/users/${id}`))}>
-          GET by id
-        </button>
         <button type="button" className="btn btn-danger" onClick={() => onRun(() => apiClient(`/api/users/${id}`, { method: 'DELETE' }))}>
-          Delete
+          Delete by id
+        </button>
+        <button
+          type="button"
+          className="btn btn-danger"
+          onClick={() => {
+            if (
+              window.confirm(
+                'Delete ALL users? This also deletes all refunds, shift reports, and orders, and clears store-admin / branch-manager links.',
+              )
+            ) {
+              onRun(() => apiClient('/api/users', { method: 'DELETE' }))
+            }
+          }}
+        >
+          Delete all
         </button>
       </ActionRow>
     </Section>

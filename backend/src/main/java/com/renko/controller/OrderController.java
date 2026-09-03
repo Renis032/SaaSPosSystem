@@ -25,6 +25,12 @@ public class OrderController
         return ResponseEntity.ok(orderService.createOrder(orderDto));
     }
 
+    @GetMapping
+    public ResponseEntity<List<OrderDto>> getAllOrders()
+    {
+        return ResponseEntity.ok(orderService.getAllOrders());
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<OrderDto> getOrderById(@PathVariable Long id)
     {
@@ -39,6 +45,12 @@ public class OrderController
                                                            @RequestParam(required = false) OrderStatus orderStatus)
     {
         return ResponseEntity.ok(orderService.getOrdersByStore(storeId, customerId, cashierId, paymentType, orderStatus));
+    }
+
+    @GetMapping("/customer/{customerId}")
+    public ResponseEntity<List<OrderDto>> getOrdersByCustomer(@PathVariable Long customerId)
+    {
+        return ResponseEntity.ok(orderService.getOrdersByCustomerId(customerId));
     }
 
     @GetMapping("/today/store/{storeId}")
@@ -73,6 +85,16 @@ public class OrderController
 
         ApiResponse apiResponse = new ApiResponse();
         apiResponse.setMessage("Order deleted successfully");
+        return ResponseEntity.ok(apiResponse);
+    }
+
+    @DeleteMapping
+    public ResponseEntity<ApiResponse> deleteAllOrders()
+    {
+        orderService.deleteAllOrders();
+
+        ApiResponse apiResponse = new ApiResponse();
+        apiResponse.setMessage("All orders deleted successfully");
         return ResponseEntity.ok(apiResponse);
     }
 

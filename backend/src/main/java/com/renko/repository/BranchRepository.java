@@ -8,4 +8,6 @@ import java.util.List;
 public interface BranchRepository extends JpaRepository<BranchEntity, Long>
 {
     List<BranchEntity> findByStoreEntity_Id(Long storeId);
+
+    List<BranchEntity> findByUserEntity_Id(Long userId);
 }

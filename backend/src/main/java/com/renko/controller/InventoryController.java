@@ -23,6 +23,18 @@ public class InventoryController
         return ResponseEntity.ok(inventoryService.createInventory(inventoryDto));
     }
 
+    @GetMapping
+    public ResponseEntity<List<InventoryDto>> getAllInventories()
+    {
+        return ResponseEntity.ok(inventoryService.getAllInventories());
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<InventoryDto> getInventoryById(@PathVariable Long id) throws Exception
+    {
+        return ResponseEntity.ok(inventoryService.getInventoryById(id));
+    }
+
     @PutMapping("/{id}")
     public ResponseEntity<InventoryDto> update(@RequestBody InventoryUpdateDto inventoryDto,
                                                @PathVariable Long id) throws Exception
@@ -37,6 +49,16 @@ public class InventoryController
 
         ApiResponse apiResponse = new ApiResponse();
         apiResponse.setMessage("Inventory deleted successfully");
+        return ResponseEntity.ok(apiResponse);
+    }
+
+    @DeleteMapping
+    public ResponseEntity<ApiResponse> deleteAllInventories()
+    {
+        inventoryService.deleteAllInventories();
+
+        ApiResponse apiResponse = new ApiResponse();
+        apiResponse.setMessage("All inventories deleted successfully");
         return ResponseEntity.ok(apiResponse);
     }
 
@@ -59,7 +81,7 @@ public class InventoryController
         return ResponseEntity.ok(inventoryService.getLowStockByStoreId(storeId));
     }
 
-    @GetMapping("/{id}/threshold")
+    @PatchMapping("/{id}/threshold")
     public ResponseEntity<InventoryDto> updateThreshold(@PathVariable Long id,
                                                         @RequestParam Integer threshold) throws Exception
     {

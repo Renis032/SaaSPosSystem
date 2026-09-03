@@ -26,6 +26,18 @@ public class EmployeeController
         return ResponseEntity.ok(employeeService.createStoreEmployee(createEmployeeDto, storeId));
     }
 
+    @GetMapping
+    public ResponseEntity<List<UserDto>> getAllEmployees()
+    {
+        return ResponseEntity.ok(employeeService.getAllEmployees());
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<UserDto> getEmployeeById(@PathVariable Long id) throws Exception
+    {
+        return ResponseEntity.ok(employeeService.getEmployeeById(id));
+    }
+
     @PutMapping("/{id}")
     public ResponseEntity<UserDto> updateEmployee(@PathVariable Long id,
                                                   @RequestBody UserUpdateDto userDto) throws Exception
@@ -40,6 +52,16 @@ public class EmployeeController
 
         ApiResponse apiResponse = new ApiResponse();
         apiResponse.setMessage("Employee deleted successfully");
+        return ResponseEntity.ok(apiResponse);
+    }
+
+    @DeleteMapping
+    public ResponseEntity<ApiResponse> deleteAllEmployees() throws Exception
+    {
+        employeeService.deleteAllEmployees();
+
+        ApiResponse apiResponse = new ApiResponse();
+        apiResponse.setMessage("All employees deleted successfully");
         return ResponseEntity.ok(apiResponse);
     }
 

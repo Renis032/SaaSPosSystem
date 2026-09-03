@@ -76,4 +76,10 @@ public class CustomerServiceImpl implements CustomerService
     {
         return customerRepository.findByFullNameContainingIgnoreCaseOrEmailContainingIgnoreCase(keyword, keyword);
     }
+
+    @Override
+    public void deleteAllCustomers()
+    {
+        customerRepository.deleteAll();
+    }
 }

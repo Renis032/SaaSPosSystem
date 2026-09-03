@@ -34,6 +34,30 @@ export function ProductSection({ onRun }: Props) {
 
   return (
     <Section title="Products" description="/api/products">
+      <ActionRow title="List / search">
+        <div className="form-grid">
+          <Field label="Product id" value={id} onChange={(e) => setId(e.target.value)} />
+          <Field label="Store id" value={form.storeId} onChange={(e) => setForm({ ...form, storeId: e.target.value })} />
+          <Field label="Keyword" value={keyword} onChange={(e) => setKeyword(e.target.value)} />
+        </div>
+        <button type="button" className="btn" onClick={() => onRun(() => apiClient('/api/products'))}>
+          GET all
+        </button>
+        <button type="button" className="btn" onClick={() => onRun(() => apiClient(`/api/products/${id}`))}>
+          GET by id
+        </button>
+        <button type="button" className="btn" onClick={() => onRun(() => apiClient(`/api/products/store/${form.storeId}`))}>
+          GET by store
+        </button>
+        <button
+          type="button"
+          className="btn"
+          onClick={() => onRun(() => apiClient(`/api/products/store/${form.storeId}/search?keyword=${encodeURIComponent(keyword)}`))}
+        >
+          Search
+        </button>
+      </ActionRow>
+
       <ActionRow title="Create / update">
         <div className="form-grid">
           <Field label="Name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
@@ -55,24 +79,21 @@ export function ProductSection({ onRun }: Props) {
         </button>
       </ActionRow>
 
-      <ActionRow title="List / search / delete">
+      <ActionRow title="Delete">
         <div className="form-grid">
-          <Field label="Store id" value={form.storeId} onChange={(e) => setForm({ ...form, storeId: e.target.value })} />
-          <Field label="Keyword" value={keyword} onChange={(e) => setKeyword(e.target.value)} />
           <Field label="Product id" value={id} onChange={(e) => setId(e.target.value)} />
         </div>
-        <button type="button" className="btn" onClick={() => onRun(() => apiClient(`/api/products/store/${form.storeId}`))}>
-          GET by store
+        <button type="button" className="btn btn-danger" onClick={() => onRun(() => apiClient(`/api/products/${id}`, { method: 'DELETE' }))}>
+          Delete by id
         </button>
         <button
           type="button"
-          className="btn"
-          onClick={() => onRun(() => apiClient(`/api/products/store/${form.storeId}/search?keyword=${encodeURIComponent(keyword)}`))}
+          className="btn btn-danger"
+          onClick={() => {
+            if (window.confirm('Delete ALL products?')) onRun(() => apiClient('/api/products', { method: 'DELETE' }))
+          }}
         >
-          Search
-        </button>
-        <button type="button" className="btn btn-danger" onClick={() => onRun(() => apiClient(`/api/products/${id}`, { method: 'DELETE' }))}>
-          Delete
+          Delete all
         </button>
       </ActionRow>
     </Section>

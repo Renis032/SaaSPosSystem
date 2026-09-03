@@ -2,17 +2,27 @@ package com.renko.service.impl;
 
 import com.renko.configuration.JwtProvider;
 import com.renko.domain.UserRole;
-import com.renko.exceptions.UserException;
+import com.renko.entities.BranchEntity;
+import com.renko.entities.StoreEntity;
 import com.renko.entities.UserEntity;
+import com.renko.exceptions.UserException;
 import com.renko.mapper.UserMapper;
 import com.renko.payload.dto.UserDto;
+import com.renko.repository.BranchRepository;
+import com.renko.repository.OrderRepository;
+import com.renko.repository.RefundRepository;
+import com.renko.repository.ShiftReportRepository;
+import com.renko.repository.StoreRepository;
 import com.renko.repository.UserRepository;
 import com.renko.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -21,6 +31,11 @@ public class UserServiceImpl implements UserService
 {
     private final UserRepository userRepository;
     private final JwtProvider jwtProvider;
+    private final OrderRepository orderRepository;
+    private final RefundRepository refundRepository;
+    private final ShiftReportRepository shiftReportRepository;
+    private final StoreRepository storeRepository;
+    private final BranchRepository branchRepository;
 
     @Override
     public UserDto getUserFromJwtToken(String token) throws UserException
@@ -90,9 +105,95 @@ public class UserServiceImpl implements UserService
     }
 
     @Override
-    public void deleteById(Long id)
+    @Transactional
+    public void deleteById(Long id) throws UserException
     {
-        userRepository.deleteById(id);
+        UserEntity user = userRepository.findById(id)
+                .orElseThrow(() -> UserException.withDetail(
+                        "User not found; cannot delete",
+                        "userId",
+                        id
+                ));
+
+        int orderCount = orderRepository.findByCashierEntity_Id(id).size();
+        int refundCount = refundRepository.findByCashierEntity_Id(id).size();
+        int shiftCount = shiftReportRepository.findByCashierEntity_Id(id).size();
+        int branchCount = branchRepository.findByUserEntity_Id(id).size();
+        StoreEntity adminOfStore = storeRepository.findByStoreAdmin_Id(id);
+
+        Map<String, Object> blockers = new LinkedHashMap<>();
+        if(orderCount > 0)
+        {
+            blockers.put("ordersAsCashier", orderCount);
+        }
+        if(refundCount > 0)
+        {
+            blockers.put("refundsAsCashier", refundCount);
+        }
+        if(shiftCount > 0)
+        {
+            blockers.put("shiftReportsAsCashier", shiftCount);
+        }
+        if(branchCount > 0)
+        {
+            blockers.put("branchesAsManager", branchCount);
+        }
+        if(adminOfStore != null)
+        {
+            blockers.put("storeAdminOfStoreId", adminOfStore.getId());
+        }
+
+        if(false == blockers.isEmpty())
+        {
+            // Keep order/refund/shift history — do not cascade-delete financial records
+            throw new UserException(
+                    "Cannot delete userId=" + id + " (" + user.getEmail()
+                            + ") because other records still reference this user. "
+                            + "Remove or reassign those records first.",
+                    blockers
+            );
+        }
+
+        userRepository.delete(user);
+    }
+
+    @Override
+    @Transactional
+    public void deleteAllUsers() throws UserException
+    {
+        // Playground cleanup: remove dependent rows so FK constraints do not block user wipe
+        refundRepository.deleteAll();
+        shiftReportRepository.deleteAll();
+        orderRepository.deleteAll();
+
+        for(BranchEntity branch : branchRepository.findAll())
+        {
+            if(branch.getUserEntity() != null)
+            {
+                branch.setUserEntity(null);
+                branchRepository.save(branch);
+            }
+        }
+
+        for(StoreEntity store : storeRepository.findAll())
+        {
+            if(store.getStoreAdmin() != null)
+            {
+                store.setStoreAdmin(null);
+                storeRepository.save(store);
+            }
+        }
+
+        for(UserEntity user : userRepository.findAll())
+        {
+            if(user.getStoreEntity() != null)
+            {
+                user.setStoreEntity(null);
+                userRepository.save(user);
+            }
+        }
+
+        userRepository.deleteAll();
     }
 
     @Override

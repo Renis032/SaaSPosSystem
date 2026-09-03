@@ -33,6 +33,17 @@ public class ProductController
         return ResponseEntity.ok(productService.createProduct(productDto, userEntity));
     }
 
+    @GetMapping
+    public ResponseEntity<List<ProductDto>> getAllProducts()
+    {
+        return ResponseEntity.ok(productService.getAllProducts());
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<ProductDto> getProductById(@PathVariable Long id) throws Exception
+    {
+        return ResponseEntity.ok(productService.getProductById(id));
+    }
 
     @GetMapping("/store/{storeId}")
     public ResponseEntity<List<ProductDto>> getByStoreId(@PathVariable Long storeId,
@@ -46,7 +57,6 @@ public class ProductController
                                                     @RequestBody ProductUpdateDto productDto,
                                                     @RequestHeader("Authorization") String jwt) throws Exception
     {
-        UserDto userDto = userService.getUserFromJwtToken(jwt);
         return ResponseEntity.ok(productService.updateProduct(id, productDto));
     }
 
@@ -61,6 +71,16 @@ public class ProductController
 
         ApiResponse apiResponse = new ApiResponse();
         apiResponse.setMessage("Product deleted successfully");
+        return ResponseEntity.ok(apiResponse);
+    }
+
+    @DeleteMapping
+    public ResponseEntity<ApiResponse> deleteAllProducts()
+    {
+        productService.deleteAllProducts();
+
+        ApiResponse apiResponse = new ApiResponse();
+        apiResponse.setMessage("All products deleted successfully");
         return ResponseEntity.ok(apiResponse);
     }
 

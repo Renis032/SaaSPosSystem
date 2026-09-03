@@ -2,6 +2,7 @@ package com.renko.controller;
 
 import com.renko.exceptions.UserException;
 import com.renko.payload.dto.ShiftReportDto;
+import com.renko.payload.response.ApiResponse;
 import com.renko.service.ShiftReportService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -28,6 +29,12 @@ public class ShiftReportController
     public ResponseEntity<ShiftReportDto> endShift() throws Exception
     {
         return  ResponseEntity.ok(shiftReportService.endShift(null, LocalDateTime.now()));
+    }
+
+    @GetMapping
+    public ResponseEntity<List<ShiftReportDto>> getAllShiftReports()
+    {
+        return ResponseEntity.ok(shiftReportService.getAllShiftReports());
     }
 
     @GetMapping("/current")
@@ -59,5 +66,25 @@ public class ShiftReportController
     public ResponseEntity<ShiftReportDto> getShiftReportById(@PathVariable Long id) throws Exception
     {
         return ResponseEntity.ok(shiftReportService.getShiftReportById(id));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<ApiResponse> deleteShiftReport(@PathVariable Long id) throws Exception
+    {
+        shiftReportService.deleteShiftReport(id);
+
+        ApiResponse apiResponse = new ApiResponse();
+        apiResponse.setMessage("Shift report deleted successfully");
+        return ResponseEntity.ok(apiResponse);
+    }
+
+    @DeleteMapping
+    public ResponseEntity<ApiResponse> deleteAllShiftReports()
+    {
+        shiftReportService.deleteAllShiftReports();
+
+        ApiResponse apiResponse = new ApiResponse();
+        apiResponse.setMessage("All shift reports deleted successfully");
+        return ResponseEntity.ok(apiResponse);
     }
 }

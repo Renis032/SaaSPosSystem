@@ -52,6 +52,22 @@ public class CategoryServiceImpl implements CategoryService
     }
 
     @Override
+    public CategoryDto getCategoryById(Long id) throws Exception
+    {
+        CategoryEntity categoryEntity = categoryRepository.findById(id)
+                .orElseThrow(() -> new Exception("Category not found with id: " + id));
+        return CategoryMapper.toDto(categoryEntity);
+    }
+
+    @Override
+    public List<CategoryDto> getAllCategories()
+    {
+        return categoryRepository.findAll().stream()
+                .map(CategoryMapper::toDto)
+                .collect(Collectors.toList());
+    }
+
+    @Override
     public List<CategoryDto> getCategoriesByStore(Long storeId)
     {
         List<CategoryEntity> categories = categoryRepository.findByStoreEntity_Id(storeId);
@@ -97,6 +113,12 @@ public class CategoryServiceImpl implements CategoryService
         }
 
         categoryRepository.delete(categoryEntity);
+    }
+
+    @Override
+    public void deleteAllCategories()
+    {
+        categoryRepository.deleteAll();
     }
 
     private UserEntity loadCurrentUser() throws Exception

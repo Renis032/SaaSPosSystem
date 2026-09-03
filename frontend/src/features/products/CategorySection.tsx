@@ -12,6 +12,22 @@ export function CategorySection({ onRun }: Props) {
 
   return (
     <Section title="Categories" description="/api/categories">
+      <ActionRow title="List">
+        <div className="form-grid">
+          <Field label="Category id" value={id} onChange={(e) => setId(e.target.value)} />
+          <Field label="Store id" value={storeId} onChange={(e) => setStoreId(e.target.value)} />
+        </div>
+        <button type="button" className="btn" onClick={() => onRun(() => apiClient('/api/categories'))}>
+          GET all
+        </button>
+        <button type="button" className="btn" onClick={() => onRun(() => apiClient(`/api/categories/${id}`))}>
+          GET by id
+        </button>
+        <button type="button" className="btn" onClick={() => onRun(() => apiClient(`/api/categories/store/${storeId}`))}>
+          GET by store
+        </button>
+      </ActionRow>
+
       <ActionRow title="Create / update">
         <div className="form-grid">
           <Field label="Name" value={name} onChange={(e) => setName(e.target.value)} />
@@ -34,16 +50,21 @@ export function CategorySection({ onRun }: Props) {
         </button>
       </ActionRow>
 
-      <ActionRow title="List / delete">
+      <ActionRow title="Delete">
         <div className="form-grid">
-          <Field label="Store id" value={storeId} onChange={(e) => setStoreId(e.target.value)} />
           <Field label="Category id" value={id} onChange={(e) => setId(e.target.value)} />
         </div>
-        <button type="button" className="btn" onClick={() => onRun(() => apiClient(`/api/categories/store/${storeId}`))}>
-          GET by store
-        </button>
         <button type="button" className="btn btn-danger" onClick={() => onRun(() => apiClient(`/api/categories/${id}`, { method: 'DELETE' }))}>
-          Delete
+          Delete by id
+        </button>
+        <button
+          type="button"
+          className="btn btn-danger"
+          onClick={() => {
+            if (window.confirm('Delete ALL categories?')) onRun(() => apiClient('/api/categories', { method: 'DELETE' }))
+          }}
+        >
+          Delete all
         </button>
       </ActionRow>
     </Section>

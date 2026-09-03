@@ -24,4 +24,8 @@ public interface ShiftReportService
     ShiftReportDto getCurrentShiftProgress(Long cashierId) throws UserException;
 
     ShiftReportDto getShiftByCashierEntityAndDate(Long cashierId, LocalDateTime date) throws Exception;
+
+    void deleteShiftReport(Long id) throws Exception;
+
+    void deleteAllShiftReports();
 }

@@ -18,4 +18,5 @@ public interface StoreService
     void deleteStore(Long id) throws UserException;
     StoreDto getStoreByEmployee() throws Exception;
     StoreDto moderateStore(Long id, StoreStatus storeStatus) throws Exception;
+    void deleteAllStores() throws UserException;
 }

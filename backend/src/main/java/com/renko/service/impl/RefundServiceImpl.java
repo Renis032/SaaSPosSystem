@@ -160,4 +160,10 @@ public class RefundServiceImpl implements RefundService
     {
         refundRepository.deleteById(refundId);
     }
+
+    @Override
+    public void deleteAllRefunds()
+    {
+        refundRepository.deleteAll();
+    }
 }

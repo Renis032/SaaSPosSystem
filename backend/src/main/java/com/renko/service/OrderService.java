@@ -12,6 +12,7 @@ public interface OrderService
     OrderDto createOrder(OrderDto orderDto) throws Exception;
     OrderDto updateOrder(Long id, OrderDto orderDto) throws Exception;
     OrderDto getOrderById(Long id);
+    List<OrderDto> getAllOrders();
 
     List<OrderDto> getOrdersByStore(Long storeId,
                                     Long customerId,
@@ -22,6 +23,7 @@ public interface OrderService
     List<OrderDto> getOrdersByCashier(Long cashierId);
 
     void deleteOrder(Long id);
+    void deleteAllOrders();
 
     List<OrderDto> getOrdersByCustomerId(Long customerId);
 

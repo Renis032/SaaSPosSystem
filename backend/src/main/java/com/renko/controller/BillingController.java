@@ -37,12 +37,34 @@ public class BillingController
         }
     }
 
+    @PostMapping("/verify")
+    public ResponseEntity<Map<String, Object>> verifyPayment(@RequestBody Map<String, String> body)
+    {
+        String paymentIntentId = body != null ? body.get("paymentIntentId") : null;
+        if(paymentIntentId == null || paymentIntentId.isBlank())
+        {
+            return ResponseEntity.badRequest().body(Map.of("error", "paymentIntentId is required"));
+        }
+
+        try
+        {
+            boolean verified = billingService.verifyPayment(paymentIntentId);
+            return ResponseEntity.ok(Map.of("paymentIntentId", paymentIntentId, "verified", verified));
+        }
+        catch(Exception e)
+        {
+            return ResponseEntity.internalServerError().body(Map.of(
+                    "error", e.getMessage() != null ? e.getMessage() : "Payment verification failed"
+            ));
+        }
+    }
+
     @PostMapping("/refund")
     public ResponseEntity<Map<String, String>> refund(@RequestBody Map<String, Object> body)
     {
         String paymentIntentId = body != null && body.get("paymentIntentId") != null ? body.get("paymentIntentId").toString() : null;
         Number amount = body != null && body.get("amountCents") != null ? (Number) body.get("amountCents") : null;
-        String reason = body != null && body.get("reason").toString() != null ? body.get("reason").toString() : null;
+        String reason = body != null && body.get("reason") != null ? body.get("reason").toString() : null;
 
         if(paymentIntentId == null || paymentIntentId.isBlank() || amount == null || amount.longValue() <= 0)
         {
