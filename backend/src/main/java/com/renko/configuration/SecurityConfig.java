@@ -1,8 +1,5 @@
 package com.renko.configuration;
 
-import jakarta.servlet.http.HttpServletRequest;
-import org.hibernate.boot.internal.Abstract;
-import org.jspecify.annotations.Nullable;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -15,8 +12,6 @@ import org.springframework.security.web.authentication.www.BasicAuthenticationFi
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
@@ -24,7 +19,7 @@ import java.util.List;
 public class SecurityConfig
 {
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http, CorsConfigurationSource corsConfigurationSource) throws Exception
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception
     {
         return http
                 // Use JWT authentication, so do not create or store HTTP sessions
@@ -51,7 +46,7 @@ public class SecurityConfig
                 .csrf(AbstractHttpConfigurer::disable)
                 // Apply the cors rules
                 .cors(cors -> cors
-                        .configurationSource(corsConfigurationSource)
+                        .configurationSource(corsConfigurationSource())
                 )
                 // Build and return the configured security filter chain
                 .build();
@@ -64,29 +59,29 @@ public class SecurityConfig
     }
 
     // Configure which frontend origins are allowed to access this REST API.
-    private CorsConfigurationSource corsConfigurationSource()
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource()
     {
-        return new CorsConfigurationSource()
+        return request ->
         {
-            @Override
-            public CorsConfiguration getCorsConfiguration(HttpServletRequest request)
-            {
-                CorsConfiguration config = new CorsConfiguration();
-                // Allow requests only from the specified frontend application
-                config.setAllowedOrigins(List.of("http://localhost:8080"));
-                // Allow all HTTP methods (GET, POST, PUT, DELETE)
-                config.setAllowedMethods(Collections.singletonList("*"));
-                // Allow cookies or authentication credentials to be included
-                config.setAllowCredentials(true);
-                // Accept all request headers
-                config.setAllowedHeaders(Collections.singletonList("*"));
-                // Expose the Authorization header so the frontend can read it
-                config.setExposedHeaders(List.of("Authorization"));
-                // Cache the cors preflight response for one hour
-                config.setMaxAge(3600L);
+            CorsConfiguration config = new CorsConfiguration();
+            // Allow requests only from the specified frontend application
+            config.setAllowedOrigins(List.of(
+                    "http://localhost:8080",
+                    "http://localhost:5173"
+            ));
+            // Allow all HTTP methods (GET, POST, PUT, DELETE)
+            config.setAllowedMethods(Collections.singletonList("*"));
+            // Allow cookies or authentication credentials to be included
+            config.setAllowCredentials(true);
+            // Accept all request headers
+            config.setAllowedHeaders(Collections.singletonList("*"));
+            // Expose the Authorization header so the frontend can read it
+            config.setExposedHeaders(List.of("Authorization"));
+            // Cache the cors preflight response for one hour
+            config.setMaxAge(3600L);
 
-                return config;
-            }
+            return config;
         };
     }
 }
