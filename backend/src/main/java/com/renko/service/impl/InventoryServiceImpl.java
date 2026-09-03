@@ -30,10 +30,12 @@ public class InventoryServiceImpl implements InventoryService
     public InventoryDto createInventory(InventoryDto inventoryDto) throws Exception
     {
         StoreEntity storeEntity = storeRepository.findById(inventoryDto.getStoreId())
-                                                 .orElseThrow(() -> new Exception("Store not found"));
+                                                 .orElseThrow(() -> new Exception("Store not found with id: " + inventoryDto.getStoreId()
+                                                         + "; cannot create inventory for productId=" + inventoryDto.getProductId()));
 
         ProductEntity productEntity = productRepository.findById(inventoryDto.getProductId())
-                                                       .orElseThrow(() -> new Exception("Product not found"));
+                                                       .orElseThrow(() -> new Exception("Product not found with id: " + inventoryDto.getProductId()
+                                                               + "; cannot create inventory for storeId=" + inventoryDto.getStoreId()));
 
         InventoryEntity inventoryEntity = InventoryMapper.toEntity(inventoryDto, storeEntity, productEntity);
         InventoryEntity savedInventory = inventoryRepository.save(inventoryEntity);
@@ -45,18 +47,20 @@ public class InventoryServiceImpl implements InventoryService
     public InventoryDto updateInventory(Long id, InventoryUpdateDto inventoryDto) throws Exception
     {
         InventoryEntity inventoryEntity = inventoryRepository.findById(id)
-                .orElseThrow(() -> new Exception("Inventory not found"));
+                .orElseThrow(() -> new Exception("Inventory not found with id: " + id + "; cannot update"));
 
         if(inventoryDto.getStoreId() != null)
         {
             inventoryEntity.setStoreEntity(storeRepository.findById(inventoryDto.getStoreId())
-                                                          .orElseThrow(() -> new Exception("Store not found")));
+                                                          .orElseThrow(() -> new Exception("Store not found with id: " + inventoryDto.getStoreId()
+                                                                  + "; cannot update inventoryId=" + id)));
         }
 
         if(inventoryDto.getProductDto() != null)
         {
             inventoryEntity.setProductEntity(productRepository.findById(inventoryDto.getProductId())
-                    .orElseThrow(() -> new Exception("Store not found")));
+                    .orElseThrow(() -> new Exception("Product not found with id: " + inventoryDto.getProductId()
+                            + "; cannot update inventoryId=" + id)));
         }
 
         if(inventoryDto.getQuantity() != null)
@@ -90,7 +94,7 @@ public class InventoryServiceImpl implements InventoryService
     public InventoryDto getInventoryById(Long id) throws Exception
     {
         InventoryEntity inventoryEntity = inventoryRepository.findById(id)
-                                                             .orElseThrow(() -> new Exception("Inventory not found"));
+                                                             .orElseThrow(() -> new Exception("Inventory not found with id: " + id));
 
         return InventoryMapper.toDto(inventoryEntity);
     }
@@ -124,7 +128,8 @@ public class InventoryServiceImpl implements InventoryService
     public InventoryDto updateLowStockThreshold(Long id, Integer threshold) throws Exception
     {
         InventoryEntity inventoryEntity = inventoryRepository.findById(id)
-                                                             .orElseThrow(() -> new Exception("Inventory not found"));
+                                                             .orElseThrow(() -> new Exception("Inventory not found with id: " + id
+                                                                     + "; cannot set lowStockThreshold=" + threshold));
 
         inventoryEntity.setLowStockThreshold(threshold);
         InventoryEntity updatedInventory = inventoryRepository.save(inventoryEntity);
@@ -136,7 +141,8 @@ public class InventoryServiceImpl implements InventoryService
     public InventoryDto addStock(Long id, Integer quantity) throws Exception
     {
         InventoryEntity inventoryEntity = inventoryRepository.findById(id)
-                .orElseThrow(() -> new Exception("Inventory not found"));
+                .orElseThrow(() -> new Exception("Inventory not found with id: " + id
+                        + "; cannot addStock quantity=" + quantity));
 
         inventoryEntity.setQuantity(inventoryEntity.getQuantity() + quantity);
         InventoryEntity updatedInventory = inventoryRepository.save(inventoryEntity);

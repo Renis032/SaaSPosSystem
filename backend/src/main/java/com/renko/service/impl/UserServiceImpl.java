@@ -30,7 +30,11 @@ public class UserServiceImpl implements UserService
 
         if(userEntity == null)
         {
-            throw new UserException("Invalid token!");
+            throw UserException.withDetail(
+                    "JWT is valid but no user matches the token email",
+                    "email",
+                    email
+            );
         }
 
         return UserMapper.toDto(userEntity);
@@ -43,7 +47,11 @@ public class UserServiceImpl implements UserService
         UserEntity currentUserEntity = userRepository.findByEmail(email);
         if(currentUserEntity == null)
         {
-            throw new UserException("User not found!");
+            throw UserException.withDetail(
+                    "Authenticated principal does not match any user in the database",
+                    "email",
+                    email
+            );
         }
 
         return  UserMapper.toDto(currentUserEntity);
@@ -55,7 +63,11 @@ public class UserServiceImpl implements UserService
         UserEntity userEntity = userRepository.findByEmail(email);
         if(userEntity == null)
         {
-            throw new UserException("User not found!");
+            throw UserException.withDetail(
+                    "User not found with the given email",
+                    "email",
+                    email
+            );
         }
 
         return  UserMapper.toDto(userEntity);
@@ -65,9 +77,7 @@ public class UserServiceImpl implements UserService
     public UserDto getUserById(Long id) throws Exception
     {
         return UserMapper.toDto(userRepository.findById(id).orElseThrow(() ->
-        {
-            return new Exception("User not found!");
-        }));
+                new Exception("User not found with id: " + id)));
     }
 
     @Override
@@ -89,6 +99,10 @@ public class UserServiceImpl implements UserService
     public UserDto getAdminUser() throws UserException
     {
         return UserMapper.toDto(userRepository.findByRole(UserRole.ADMIN)
-                .orElseThrow(() -> new UserException("Admin user not found!")));
+                .orElseThrow(() -> UserException.withDetail(
+                        "Admin user not found",
+                        "role",
+                        UserRole.ADMIN
+                )));
     }
 }

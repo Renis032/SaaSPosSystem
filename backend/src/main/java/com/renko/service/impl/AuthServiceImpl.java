@@ -38,13 +38,21 @@ public class AuthServiceImpl implements AuthService
         UserEntity userEntity = userRepository.findByEmail(authRequestDto.getEmail());
         if(userEntity != null)
         {
-            throw new UserException("Email is already registered!");
+            throw UserException.withDetail(
+                    "Email is already registered",
+                    "email",
+                    authRequestDto.getEmail()
+            );
         }
 
         if(authRequestDto.getRole() == UserRole.ADMIN &&
            userRepository.existsByRole(UserRole.ADMIN))
         {
-            throw new UserException("Only one ADMIN allowed!");
+            throw UserException.withDetail(
+                    "Only one ADMIN user is allowed in the system",
+                    "role",
+                    UserRole.ADMIN
+            );
         }
 
         UserEntity newUserEntity = new UserEntity();
@@ -122,7 +130,11 @@ public class AuthServiceImpl implements AuthService
             UserDetails userDetails = customUserDetailsService.loadUserByUsername(email);
             if(!passwordEncoder.matches(password, userDetails.getPassword()))
             {
-                throw new UserException("Wrong password!");
+                throw UserException.withDetail(
+                        "Wrong password for the given email",
+                        "email",
+                        email
+                );
             }
 
             // Create an authenticated Spring Security Authentication object
@@ -132,7 +144,11 @@ public class AuthServiceImpl implements AuthService
         }
         catch(UsernameNotFoundException e)
         {
-            throw new UserException("Email does not exist!");
+            throw UserException.withDetail(
+                    "No user exists with the given email",
+                    "email",
+                    email
+            );
         }
     }
 }

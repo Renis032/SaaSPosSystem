@@ -34,12 +34,14 @@ public class RefundServiceImpl implements RefundService
     public RefundDto createRefund(RefundDto refundDto) throws Exception
     {
         OrderEntity order = orderRepository.findById(refundDto.getOrderId())
-                .orElseThrow(() -> new EntityNotFoundException("Order not found " + refundDto.getOrderId()));
+                .orElseThrow(() -> new EntityNotFoundException(
+                        "Order not found with id: " + refundDto.getOrderId() + "; cannot create refund"));
 
         StoreEntity store = order.getStoreEntity();
         if(store == null)
         {
-            throw new EntityNotFoundException("Order does not have store");
+            throw new EntityNotFoundException("Order id=" + refundDto.getOrderId()
+                    + " has no linked store; cannot create refund amount=" + refundDto.getAmount());
         }
 
         UserDto cashier = userService.getCurrentUser();
@@ -130,7 +132,7 @@ public class RefundServiceImpl implements RefundService
     {
         return refundRepository.findById(refundId)
                 .map(RefundMapper::toDto)
-                .orElseThrow(() -> new Exception("Refund not found"));
+                .orElseThrow(() -> new Exception("Refund not found with id: " + refundId));
     }
 
     @Override

@@ -46,7 +46,10 @@ public class ShiftReportServiceImpl implements ShiftReportService
 
         if(existing.isPresent())
         {
-            throw new Exception("You already have an active shift.");
+            throw new Exception("Cashier already has an active shift. userId=" + currentUser.getId()
+                    + ", email=" + currentUser.getEmail()
+                    + ", activeShiftId=" + existing.get().getId()
+                    + ", shiftStart=" + existing.get().getShiftStart());
         }
 
         StoreDto store = storeService.getStoreById(currentUser.getStoreId());
@@ -70,7 +73,9 @@ public class ShiftReportServiceImpl implements ShiftReportService
         UserDto cashier =  userService.getCurrentUser();
 
         ShiftReportEntity shiftReport = shiftReportRepository.findTopByCashierEntityAndShiftEndIsNullOrderByShiftStartDesc(cashier)
-                .orElseThrow(() -> new Exception("No active shift found for this cashier"));
+                .orElseThrow(() -> new Exception("No active shift found for cashierId=" + cashier.getId()
+                        + ", email=" + cashier.getEmail()
+                        + (shiftReportId != null ? ", requestedShiftReportId=" + shiftReportId : "")));
 
         shiftReport.setShiftEnd(shiftEnd);
 
@@ -109,7 +114,7 @@ public class ShiftReportServiceImpl implements ShiftReportService
     {
         return shiftReportRepository.findById(id)
                 .map(ShiftReportMapper::toDto)
-                .orElseThrow(() -> new Exception("No shift found"));
+                .orElseThrow(() -> new Exception("Shift report not found with id: " + id));
     }
 
     @Override
@@ -182,13 +187,15 @@ public class ShiftReportServiceImpl implements ShiftReportService
     public ShiftReportDto getShiftByCashierEntityAndDate(Long cashierId, LocalDateTime date) throws Exception
     {
         UserEntity cashier = userRepository.findById(cashierId)
-                .orElseThrow(() -> new Exception("No active cashier for this id"));
+                .orElseThrow(() -> new Exception("Cashier not found with id: " + cashierId
+                        + "; cannot lookup shift for date=" + date));
 
         LocalDateTime start = date.withHour(0).withMinute(0).withSecond(0);
         LocalDateTime end = date.withHour(23).withMinute(59).withSecond(59);
 
         ShiftReportEntity report = shiftReportRepository.findByCashierEntityAndShiftStartBetween(cashier, start, end)
-                .orElseThrow(() -> new Exception("No active shift found for this id"));
+                .orElseThrow(() -> new Exception("No shift found for cashierId=" + cashierId
+                        + " between " + start + " and " + end));
 
         return ShiftReportMapper.toDto(report);
     }

@@ -27,7 +27,8 @@ public class ProductServiceImpl implements ProductService
     public ProductDto createProduct(ProductDto productDto, UserEntity userEntity) throws Exception
     {
         StoreEntity storeEntity = storeRepository.findById(productDto.getStoreId())
-                                                 .orElseThrow(() -> new Exception("Store not found."));
+                                                 .orElseThrow(() -> new Exception("Store not found with id: " + productDto.getStoreId()
+                                                         + "; cannot create product '" + productDto.getName() + "'"));
 
         ProductEntity productEntity = ProductMapper.toEntity(productDto, storeEntity);
         ProductEntity savedProduct = productRepository.save(productEntity);
@@ -40,7 +41,7 @@ public class ProductServiceImpl implements ProductService
     {
 
         ProductEntity productEntity = productRepository.findById(id)
-                .orElseThrow(() -> new Exception("Product not found with id " + id));
+                .orElseThrow(() -> new Exception("Product not found with id: " + id + "; cannot update product"));
 
         productEntity.updateFrom(productDto);
         productEntity.setCreatedAt(productEntity.getCreatedAt()); // CHECK
@@ -53,7 +54,8 @@ public class ProductServiceImpl implements ProductService
     public void deleteProduct(Long id, UserEntity userEntity) throws Exception
     {
         ProductEntity productEntity = productRepository.findById(id)
-                                                       .orElseThrow(() -> new Exception("Product not found."));
+                                                       .orElseThrow(() -> new Exception("Product not found with id: " + id
+                                                               + "; cannot delete (requested by userId=" + (userEntity != null ? userEntity.getId() : null) + ")"));
 
         productRepository.delete(productEntity);
     }

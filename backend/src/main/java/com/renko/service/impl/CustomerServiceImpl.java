@@ -24,7 +24,7 @@ public class CustomerServiceImpl implements CustomerService
     public CustomerEntity updateCustomer(Long id, CustomerEntity customerEntity) throws Exception
     {
         CustomerEntity customer = customerRepository.findById(id)
-                                                    .orElseThrow(() -> new Exception("Customer not found"));
+                                                    .orElseThrow(() -> new Exception("Customer not found with id: " + id + "; cannot update"));
 
         if(customerEntity.getFullName() != null)
         {
@@ -47,7 +47,7 @@ public class CustomerServiceImpl implements CustomerService
     public void deleteCustomer(Long id) throws Exception
     {
         CustomerEntity customer = customerRepository.findById(id)
-                .orElseThrow(() -> new Exception("Customer not found"));
+                .orElseThrow(() -> new Exception("Customer not found with id: " + id + "; cannot delete"));
 
         customerRepository.deleteById(id);
     }
@@ -56,7 +56,7 @@ public class CustomerServiceImpl implements CustomerService
     public CustomerEntity getCustomer(Long id) throws Exception
     {
         return customerRepository.findById(id)
-                .orElseThrow(() -> new Exception("Customer not found"));
+                .orElseThrow(() -> new Exception("Customer not found with id: " + id));
     }
 
     @Override

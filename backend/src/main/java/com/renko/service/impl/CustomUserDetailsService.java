@@ -25,7 +25,7 @@ public class CustomUserDetailsService implements UserDetailsService
         UserEntity userEntity = userRepository.findByEmail(email);
         if(userEntity == null)
         {
-            throw new UsernameNotFoundException("User not found!");
+            throw new UsernameNotFoundException("User not found with email: " + email);
         }
 
         // Convert the application's role into a Spring Security authority

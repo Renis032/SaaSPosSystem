@@ -32,11 +32,13 @@ public class CategoryServiceImpl implements CategoryService
     {
         UserEntity userEntity = UserMapper.toEntity(userService.getCurrentUser());
         StoreEntity storeEntity = storeRepository.findById(categoryDto.getStoreId())
-                                                 .orElseThrow(() -> new Exception("Store not found"));
+                                                 .orElseThrow(() -> new Exception("Store not found with id: " + categoryDto.getStoreId()
+                                                         + "; cannot create category '" + categoryDto.getName() + "'"));
 
         if(false == isAuthenticated(userEntity, storeEntity))
         {
-            throw new Exception("You dont have permission");
+            throw new Exception("You do not have permission to create a category for storeId=" + categoryDto.getStoreId()
+                    + " as userId=" + userEntity.getId() + " with role=" + userEntity.getRole());
         }
 
         CategoryEntity categoryEntity = CategoryEntity.builder()
@@ -61,14 +63,17 @@ public class CategoryServiceImpl implements CategoryService
     public CategoryDto updateCategory(Long id, CategoryDto categoryDto) throws Exception
     {
         CategoryEntity categoryEntity = categoryRepository.findById(id)
-                                                          .orElseThrow(() -> new Exception("Category not found"));
+                                                          .orElseThrow(() -> new Exception("Category not found with id: " + id + "; cannot update"));
 
         UserEntity userEntity = UserMapper.toEntity(userService.getCurrentUser());
         categoryEntity.setName(categoryDto.getName());
 
         if(false == isAuthenticated(userEntity, categoryEntity.getStoreEntity()))
         {
-            throw new Exception("You dont have permission");
+            Long storeId = categoryEntity.getStoreEntity() != null ? categoryEntity.getStoreEntity().getId() : null;
+            throw new Exception("You do not have permission to update categoryId=" + id
+                    + " on storeId=" + storeId + " as userId=" + userEntity.getId()
+                    + " with role=" + userEntity.getRole());
         }
 
         return CategoryMapper.toDto(categoryRepository.save(categoryEntity));
@@ -78,12 +83,15 @@ public class CategoryServiceImpl implements CategoryService
     public void deleteCategory(Long id) throws Exception
     {
         CategoryEntity categoryEntity = categoryRepository.findById(id)
-                                                          .orElseThrow(() -> new Exception("Category not found"));
+                                                          .orElseThrow(() -> new Exception("Category not found with id: " + id + "; cannot delete"));
 
         UserEntity userEntity = UserMapper.toEntity(userService.getCurrentUser());
         if(false == isAuthenticated(userEntity, categoryEntity.getStoreEntity()))
         {
-            throw new Exception("You dont have permission");
+            Long storeId = categoryEntity.getStoreEntity() != null ? categoryEntity.getStoreEntity().getId() : null;
+            throw new Exception("You do not have permission to delete categoryId=" + id
+                    + " on storeId=" + storeId + " as userId=" + userEntity.getId()
+                    + " with role=" + userEntity.getRole());
         }
 
         categoryRepository.delete(categoryEntity);

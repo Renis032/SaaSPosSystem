@@ -41,7 +41,8 @@ public class OrderServiceImpl implements OrderService
         StoreDto store = storeService.getStoreById(cashier.getStoreId());
         if(store == null)
         {
-            throw new Exception("User's store not found");
+            throw new Exception("Cashier's store not found for userId=" + cashier.getId()
+                    + ", storeId=" + cashier.getStoreId());
         }
 
         CustomerEntity customer = null;
@@ -84,7 +85,9 @@ public class OrderServiceImpl implements OrderService
                                                    .map(itemDto ->
                                                    {
                                                       ProductEntity productEntity = productRepository.findById(itemDto.getProductId())
-                                                                                                     .orElseThrow(() -> new EntityNotFoundException("Product not found"));
+                                                                                                     .orElseThrow(() -> new EntityNotFoundException(
+                                                                                                             "Product not found with id: " + itemDto.getProductId()
+                                                                                                             + "; cannot add order item with quantity=" + itemDto.getQuantity()));
 
                                                       double originalPrice = productEntity.getSellingPrice();
                                                       double discountPercentage = productEntity.getDiscountPercentage();
@@ -119,7 +122,10 @@ public class OrderServiceImpl implements OrderService
         {
             if(false == billingService.verifyPayment(orderDto.getStripePaymentIntentId()))
             {
-                throw new Exception("Cart payment not confirmed");
+                throw new Exception("CARD payment not confirmed for stripePaymentIntentId="
+                        + orderDto.getStripePaymentIntentId()
+                        + "; storeId=" + store.getId()
+                        + ", cashierId=" + cashier.getId());
             }
 
             order.setStripePaymentIntentId(orderDto.getStripePaymentIntentId());
@@ -132,13 +138,18 @@ public class OrderServiceImpl implements OrderService
 
             if(inventory == null)
             {
-                throw new Exception("Product " + item.getProductEntity().getName() + " is not available in inventory");
+                throw new Exception("Product '" + item.getProductEntity().getName()
+                        + "' (productId=" + item.getProductEntity().getId()
+                        + ") has no inventory row for storeId=" + store.getId());
             }
 
             if(inventory.getQuantity() < item.getQuantity())
             {
-                throw new Exception("Insufficient stock for " + item.getProductEntity().getName() + " , Available: " +
-                                    inventory.getQuantity() + " but requested: " + item.getQuantity());
+                throw new Exception("Insufficient stock for product '" + item.getProductEntity().getName()
+                                    + "' (productId=" + item.getProductEntity().getId()
+                                    + ", storeId=" + store.getId()
+                                    + "). Available=" + inventory.getQuantity()
+                                    + ", requested=" + item.getQuantity());
             }
 
             inventory.setQuantity(inventory.getQuantity() - item.getQuantity());
@@ -153,7 +164,7 @@ public class OrderServiceImpl implements OrderService
     public OrderDto updateOrder(Long id, OrderDto orderDto) throws Exception
     {
         OrderEntity order = orderRepository.findById(id)
-                                           .orElseThrow(() -> new EntityNotFoundException("Order not found with id " + id));
+                                           .orElseThrow(() -> new EntityNotFoundException("Order not found with id: " + id + "; cannot update"));
 
         if(null != orderDto.getPaymentType())
         {
@@ -172,11 +183,13 @@ public class OrderServiceImpl implements OrderService
                     {
                         if(null == itemsDto.getProductDto().getId())
                         {
-                            throw new EntityNotFoundException("Product id is invalid");
+                            throw new EntityNotFoundException("Order item product id is invalid/null while updating orderId=" + id);
                         }
 
                         ProductEntity product = productRepository.findById(itemsDto.getProductId())
-                                .orElseThrow(() -> new EntityNotFoundException("Product not found"));
+                                .orElseThrow(() -> new EntityNotFoundException(
+                                        "Product not found with id: " + itemsDto.getProductId()
+                                        + "; cannot update orderId=" + id));
 
                         return OrderItemEntity.builder()
                                 .id(itemsDto.getId())
@@ -269,7 +282,7 @@ public class OrderServiceImpl implements OrderService
     public ReceiptDto getReceipt(Long orderId)
     {
         OrderEntity order = orderRepository.findById(orderId)
-                                           .orElseThrow(() -> new EntityNotFoundException("Order not found with id " + orderId));
+                                           .orElseThrow(() -> new EntityNotFoundException("Order not found with id: " + orderId + "; cannot build receipt"));
 
         String receiptNumber = String.format("RCP-%d-%d", order.getStoreEntity().getId(), order.getId());
 

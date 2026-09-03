@@ -30,7 +30,8 @@ public class EmployeeServiceImpl implements EmployeeService
     public UserDto createStoreEmployee(CreateEmployeeDto employee, Long storeId) throws Exception
     {
         StoreEntity storeEntity = storeRepository.findById(storeId)
-                                                 .orElseThrow(() -> new Exception("Store not found"));
+                                                 .orElseThrow(() -> new Exception("Store not found with id: " + storeId
+                                                         + "; cannot create employee email=" + employee.getEmail()));
 
         UserEntity userEntity = new UserEntity();
         userEntity.setEmail(employee.getEmail());
@@ -49,7 +50,7 @@ public class EmployeeServiceImpl implements EmployeeService
     public UserDto updateStoreEmployee(Long employeeId, UserUpdateDto employeeDto) throws Exception
     {
         UserEntity existingEmployee = userRepository.findById(employeeId)
-                                                    .orElseThrow(() -> new Exception("Employee does not exist"));
+                                                    .orElseThrow(() -> new Exception("Employee not found with id: " + employeeId + "; cannot update"));
 
         existingEmployee.updateFrom(employeeDto);
         // Update password only if non-empty
@@ -62,7 +63,8 @@ public class EmployeeServiceImpl implements EmployeeService
         if(employeeDto.getStoreEntity() != null)
         {
             StoreEntity storeEntity = storeRepository.findById(employeeDto.getStoreEntity().getId())
-                                                     .orElseThrow(() -> new Exception("Store not found"));
+                                                     .orElseThrow(() -> new Exception("Store not found with id: " + employeeDto.getStoreEntity().getId()
+                                                             + "; cannot reassign employeeId=" + employeeId));
 
             existingEmployee.setStoreEntity(storeEntity);
         }
@@ -76,7 +78,7 @@ public class EmployeeServiceImpl implements EmployeeService
     public void deleteEmployee(Long employeeId) throws Exception
     {
         UserEntity employee = userRepository.findById(employeeId)
-                                            .orElseThrow(()-> new Exception("Employee not found"));
+                                            .orElseThrow(() -> new Exception("Employee not found with id: " + employeeId + "; cannot delete"));
 
         userRepository.delete(employee);
     }
@@ -85,7 +87,9 @@ public class EmployeeServiceImpl implements EmployeeService
     public List<UserDto> findStoreEmployeesByRole(Long storeId, UserRole role) throws Exception
     {
         StoreEntity storeEntity = storeRepository.findById(storeId)
-                                                 .orElseThrow(() -> new Exception("Store not found"));
+                                                 .orElseThrow(() -> new Exception("Store not found with id: " + storeId
+                                                         + "; cannot list employees"
+                                                         + (role != null ? " for role=" + role : "")));
 
         return userRepository.findByStoreEntity(storeEntity)
                              .stream()

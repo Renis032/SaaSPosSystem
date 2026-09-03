@@ -43,7 +43,7 @@ public class BranchServiceImpl implements BranchService
     public BranchDto updateBranch(Long id, BranchUpdateDto branchDto) throws Exception
     {
         BranchEntity existingBranch = branchRepository.findById(id)
-                .orElseThrow(() -> new Exception("Branch not existing"));
+                .orElseThrow(() -> new Exception("Branch not found with id: " + id + "; cannot update"));
 
         existingBranch.updateFrom(branchDto);
         BranchEntity savedBranch = branchRepository.save(existingBranch);
@@ -55,7 +55,7 @@ public class BranchServiceImpl implements BranchService
     public BranchDto getBranchById(Long id) throws Exception
     {
         BranchEntity branchEntity = branchRepository.findById(id)
-                .orElseThrow(() -> new Exception("Branch not existing"));
+                .orElseThrow(() -> new Exception("Branch not found with id: " + id));
 
         return BranchMapper.toDto(branchEntity);
     }
@@ -64,7 +64,7 @@ public class BranchServiceImpl implements BranchService
     public void deleteBranch(Long id) throws Exception
     {
         BranchEntity branchEntity = branchRepository.findById(id)
-                .orElseThrow(() -> new Exception("Branch not existing"));
+                .orElseThrow(() -> new Exception("Branch not found with id: " + id + "; cannot delete"));
 
         branchRepository.delete(branchEntity);
     }

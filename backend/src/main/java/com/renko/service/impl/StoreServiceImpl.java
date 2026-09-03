@@ -15,6 +15,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -37,7 +38,7 @@ public class StoreServiceImpl implements StoreService
     {
         StoreEntity storeEntity = storeRepository.findById(id)
                                                  .orElseThrow(
-                                                 () -> new Exception("Store not found!"));
+                                                 () -> new Exception("Store not found with id: " + id));
 
         return StoreMapper.toDto(storeEntity);
     }
@@ -62,7 +63,13 @@ public class StoreServiceImpl implements StoreService
         StoreEntity store = storeRepository.findByStoreAdmin_Id(currentUser.getId());
         if(store == null)
         {
-            throw new UserException("You dont have permission");
+            throw UserException.withDetails(
+                    "You do not have permission to update a store. No store is linked to the current admin user.",
+                    Map.of(
+                            "userId", currentUser.getId(),
+                            "requestedStoreId", id
+                    )
+            );
         }
 
         store.setBrandName(storeDto.getBrandName());
@@ -92,7 +99,10 @@ public class StoreServiceImpl implements StoreService
     public void deleteStore(Long id) throws UserException
     {
         StoreEntity storeEntity = storeRepository.findById(id)
-                                                 .orElseThrow(() -> new UserException("Store not found"));
+                                                 .orElseThrow(() -> new UserException(
+                                                         "Store not found with id: " + id,
+                                                         Map.of("storeId", id)
+                                                 ));
 
         storeRepository.delete(storeEntity);
     }
@@ -103,11 +113,25 @@ public class StoreServiceImpl implements StoreService
         UserDto currentUser = userService.getCurrentUser();
         if(currentUser == null)
         {
-            throw  new UserException("No permission.");
+            throw new UserException("No authenticated user found; cannot resolve employee store.");
+        }
+
+        if(currentUser.getStoreId() == null)
+        {
+            throw UserException.withDetails(
+                    "Current user is not linked to any store",
+                    Map.of(
+                            "userId", currentUser.getId(),
+                            "email", currentUser.getEmail()
+                    )
+            );
         }
 
         StoreEntity storeEntity = storeRepository.findById(currentUser.getStoreId())
-                                                 .orElseThrow(() -> new Exception("No store found"));
+                                                 .orElseThrow(() -> new Exception(
+                                                         "Store not found with id: " + currentUser.getStoreId()
+                                                         + " for employee userId=" + currentUser.getId()
+                                                 ));
 
         return StoreMapper.toDto(storeEntity);
     }
@@ -116,7 +140,10 @@ public class StoreServiceImpl implements StoreService
     public StoreDto moderateStore(Long id, StoreStatus storeStatus) throws Exception
     {
         StoreEntity storeEntity = storeRepository.findById(id)
-                                                 .orElseThrow(() -> new Exception("Store not found"));
+                                                 .orElseThrow(() -> new Exception(
+                                                         "Store not found with id: " + id
+                                                         + "; cannot set status to " + storeStatus
+                                                 ));
 
         storeEntity.setStatus(storeStatus);
         StoreEntity savedStore = storeRepository.save(storeEntity);

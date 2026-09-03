@@ -90,7 +90,10 @@ public class BillingServiceImpl implements BillingService
         catch(StripeException e)
         {
             log.error("Stripe refund failed: {}", e.getMessage());
-            throw new Exception("Refund failed: " + e.getMessage());
+            throw new Exception("Stripe refund failed for paymentIntentId=" + paymentIntentId
+                    + ", amountCents=" + amountCents
+                    + ", reason=" + reason
+                    + ": " + e.getMessage());
         }
     }
 
@@ -98,7 +101,7 @@ public class BillingServiceImpl implements BillingService
     {
         if(stripeApiKey == null || stripeApiKey.isBlank())
         {
-            throw new IllegalAccessException("Stripe key is not configured!");
+            throw new IllegalAccessException("Stripe secret key is not configured. Set stripe.api.key (or equivalent) before using billing endpoints.");
         }
     }
 }
