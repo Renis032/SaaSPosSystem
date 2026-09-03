@@ -4,12 +4,12 @@ import com.renko.domain.OrderStatus;
 import com.renko.domain.PaymentType;
 import com.renko.entities.*;
 import com.renko.mapper.OrderMapper;
-import com.renko.mapper.StoreMapper;
-import com.renko.mapper.UserMapper;
 import com.renko.payload.dto.*;
 import com.renko.repository.InventoryRepository;
 import com.renko.repository.OrderRepository;
 import com.renko.repository.ProductRepository;
+import com.renko.repository.StoreRepository;
+import com.renko.repository.UserRepository;
 import com.renko.service.*;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -31,19 +31,26 @@ public class OrderServiceImpl implements OrderService
     private final InventoryRepository inventoryRepository;
     private final BillingService billingService;
     private final CustomerService customerService;
-    private final StoreService storeService;
+    private final StoreRepository storeRepository;
+    private final UserRepository userRepository;
 
     @Override
     @Transactional
     public OrderDto createOrder(OrderDto orderDto) throws Exception
     {
-        UserDto cashier = userService.getCurrentUser();
-        StoreDto store = storeService.getStoreById(cashier.getStoreId());
-        if(store == null)
+        UserDto cashierDto = userService.getCurrentUser();
+        UserEntity cashier = userRepository.findById(cashierDto.getId())
+                .orElseThrow(() -> new Exception("Cashier not found with id: " + cashierDto.getId()));
+
+        if(cashier.getStoreEntity() == null || cashier.getStoreEntity().getId() == null)
         {
             throw new Exception("Cashier's store not found for userId=" + cashier.getId()
-                    + ", storeId=" + cashier.getStoreId());
+                    + ", storeId=" + cashierDto.getStoreId());
         }
+
+        StoreEntity store = storeRepository.findById(cashier.getStoreEntity().getId())
+                .orElseThrow(() -> new Exception("Cashier's store not found for userId=" + cashier.getId()
+                        + ", storeId=" + cashier.getStoreEntity().getId()));
 
         CustomerEntity customer = null;
         if(orderDto.getCustomerId() != null)
@@ -63,7 +70,7 @@ public class OrderServiceImpl implements OrderService
                 customer = new CustomerEntity();
                 customer.setFullName(orderDto.getCustomerName() != null ? orderDto.getCustomerName() : "Guest");
                 customer.setPhone(orderDto.getCustomerPhone());
-                customer.setStoreEntity(StoreMapper.toEntity(store, UserMapper.toEntity(cashier)));
+                customer.setStoreEntity(store);
                 customer = customerService.createCustomer(customer);
             }
         }
@@ -74,8 +81,8 @@ public class OrderServiceImpl implements OrderService
         }
 
         OrderEntity order = OrderEntity.builder()
-                .storeEntity(StoreMapper.toEntity(store, UserMapper.toEntity(cashier)))
-                .cashierEntity(UserMapper.toEntity(cashier))
+                .storeEntity(store)
+                .cashierEntity(cashier)
                 .customerEntity(customer)
                 .paymentType(orderDto.getPaymentType())
                 .build();
@@ -181,7 +188,7 @@ public class OrderServiceImpl implements OrderService
             List<OrderItemEntity> updatedItems = orderDto.getItems().stream()
                     .map(itemsDto ->
                     {
-                        if(null == itemsDto.getProductDto().getId())
+                        if(null == itemsDto.getProductId())
                         {
                             throw new EntityNotFoundException("Order item product id is invalid/null while updating orderId=" + id);
                         }
@@ -287,8 +294,9 @@ public class OrderServiceImpl implements OrderService
         String receiptNumber = String.format("RCP-%d-%d", order.getStoreEntity().getId(), order.getId());
 
         String storeBrand = order.getStoreEntity().getBrandName();
-        String storeAddress = order.getStoreEntity().getContact().getAddress();
-        String storePhone = order.getStoreEntity().getContact().getPhone();
+        StoreContactEntity contact = order.getStoreEntity().getContact();
+        String storeAddress = contact != null ? contact.getAddress() : null;
+        String storePhone = contact != null ? contact.getPhone() : null;
 
         List<ReceiptItemDto> receiptItems = order.getItems().stream()
                 .map(item ->
@@ -318,6 +326,10 @@ public class OrderServiceImpl implements OrderService
                            .build();
                 }).collect(Collectors.toList());
 
+        String cashierName = order.getCashierEntity() != null ? order.getCashierEntity().getFullName() : null;
+        String customerName = order.getCustomerEntity() != null ? order.getCustomerEntity().getFullName() : null;
+        String customerPhone = order.getCustomerEntity() != null ? order.getCustomerEntity().getPhone() : null;
+
         return ReceiptDto.builder()
                 .orderId(order.getId())
                 .receiptNumber(receiptNumber)
@@ -325,9 +337,9 @@ public class OrderServiceImpl implements OrderService
                 .storeName(storeBrand)
                 .storeAddress(storeAddress)
                 .storePhone(storePhone)
-                .cashierName(order.getCashierEntity().getFullName())
-                .customerName(order.getCustomerEntity().getFullName())
-                .customerPhone(order.getCustomerEntity().getPhone())
+                .cashierName(cashierName)
+                .customerName(customerName)
+                .customerPhone(customerPhone)
                 .items(receiptItems)
                 .build();
     }

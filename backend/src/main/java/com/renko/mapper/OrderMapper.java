@@ -1,8 +1,6 @@
 package com.renko.mapper;
 
 import com.renko.entities.OrderEntity;
-import com.renko.entities.OrderItemEntity;
-import com.renko.entities.UserEntity;
 import com.renko.payload.dto.OrderDto;
 import com.renko.payload.dto.OrderItemDto;
 
@@ -22,11 +20,13 @@ public class OrderMapper
 //                                                                                  .collect(Collectors.toList())
 //                : Collections.emptyList();
 
-        List<OrderItemDto> itemsFromEntity = orderEntity.getItems()
-                .stream()
-                .filter(Objects::nonNull)
-                .map(OrderItemMapper::toDto)
-                .collect(Collectors.toList());
+        List<OrderItemDto> itemsFromEntity = orderEntity.getItems() == null
+                ? Collections.emptyList()
+                : orderEntity.getItems()
+                        .stream()
+                        .filter(Objects::nonNull)
+                        .map(OrderItemMapper::toDto)
+                        .collect(Collectors.toList());
 
         return OrderDto.builder()
                 .id(orderEntity.getId())
@@ -35,11 +35,12 @@ public class OrderMapper
                 .totalDiscount(orderEntity.getTotalDiscount())
                 .createdAt(orderEntity.getCreatedAt())
                 .updatedAt(orderEntity.getUpdatedAt())
-                .storeId(orderEntity.getStoreEntity().getId())
-                .customerId(orderEntity.getCustomerEntity().getId())
-                .customerName(orderEntity.getCustomerEntity().getFullName())
-                .customerPhone(orderEntity.getCustomerEntity().getPhone())
-                .cashier(UserMapper.toDto(orderEntity.getCashierEntity()))
+                .storeId(orderEntity.getStoreEntity() != null ? orderEntity.getStoreEntity().getId() : null)
+                .customerId(orderEntity.getCustomerEntity() != null ? orderEntity.getCustomerEntity().getId() : null)
+                .customerName(orderEntity.getCustomerEntity() != null ? orderEntity.getCustomerEntity().getFullName() : null)
+                .customerPhone(orderEntity.getCustomerEntity() != null ? orderEntity.getCustomerEntity().getPhone() : null)
+                .cashierId(orderEntity.getCashierEntity() != null ? orderEntity.getCashierEntity().getId() : null)
+                .paymentType(orderEntity.getPaymentType())
                 .stripePaymentIntentId(orderEntity.getStripePaymentIntentId())
                 .items(itemsFromEntity)
                 .build();

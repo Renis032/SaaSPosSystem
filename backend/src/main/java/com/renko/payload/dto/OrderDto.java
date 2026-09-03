@@ -1,7 +1,6 @@
 package com.renko.payload.dto;
 
 import com.renko.domain.PaymentType;
-import com.renko.entities.CustomerEntity;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -27,11 +26,10 @@ public class OrderDto
 
     private Long storeId;
     private Long customerId;
+    private Long cashierId;
 
     private String customerName;
     private String customerPhone;
-
-    private UserDto cashier;
 
     // Since we have the customer, the name phone are not necessary?
 //    @com.fasterxml.jackson.annotation.JsonIgnoreProperties("store")

@@ -398,7 +398,7 @@ CREATE TABLE `user` (
   UNIQUE KEY `UKob8kqyqqgmefl0aco34akdtpe` (`email`),
   KEY `FKm1n7cl3jdown9mn7pqlo9g6cd` (`store_entity_id`),
   CONSTRAINT `FKm1n7cl3jdown9mn7pqlo9g6cd` FOREIGN KEY (`store_entity_id`) REFERENCES `store_entity` (`id`),
-  CONSTRAINT `user_chk_1` CHECK ((`role` between 0 and 4))
+  CONSTRAINT `user_chk_1` CHECK ((`role` between 0 and 5))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -434,7 +434,7 @@ CREATE TABLE `user_entity` (
   UNIQUE KEY `UK4xad1enskw4j1t2866f7sodrx` (`email`),
   KEY `FK8v728h5lw5heib0lxv8ukhtdx` (`store_entity_id`),
   CONSTRAINT `FK8v728h5lw5heib0lxv8ukhtdx` FOREIGN KEY (`store_entity_id`) REFERENCES `store_entity` (`id`),
-  CONSTRAINT `user_entity_chk_1` CHECK ((`role` between 0 and 4))
+  CONSTRAINT `user_entity_chk_1` CHECK ((`role` between 0 and 5))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 

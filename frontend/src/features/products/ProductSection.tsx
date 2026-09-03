@@ -29,7 +29,7 @@ export function ProductSection({ onRun }: Props) {
     maxRetailPrice: Number(form.maxRetailPrice),
     sellingPrice: Number(form.sellingPrice),
     storeId: Number(form.storeId),
-    categoryEntity: form.categoryId ? { id: Number(form.categoryId) } : null,
+    categoryId: form.categoryId ? Number(form.categoryId) : null,
   }
 
   return (

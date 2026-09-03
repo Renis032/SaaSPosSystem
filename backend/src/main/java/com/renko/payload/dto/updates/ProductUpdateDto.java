@@ -1,6 +1,5 @@
 package com.renko.payload.dto.updates;
 
-import com.renko.entities.CategoryEntity;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -15,5 +14,5 @@ public class ProductUpdateDto
     private Double sellingPrice;
     private String brand;
     private String imageUrl;
-    private CategoryEntity categoryEntity;
+    private Long categoryId;
 }

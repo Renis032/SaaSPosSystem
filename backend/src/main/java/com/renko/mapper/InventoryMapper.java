@@ -11,10 +11,9 @@ public class InventoryMapper
     {
         return InventoryDto.builder()
                 .id(inventoryEntity.getId())
-                .productId(inventoryEntity.getProductEntity().getId())
-                .productDto(ProductMapper.toDto(inventoryEntity.getProductEntity()))
+                .productId(inventoryEntity.getProductEntity() != null ? inventoryEntity.getProductEntity().getId() : null)
                 .quantity(inventoryEntity.getQuantity())
-                .storeId(inventoryEntity.getStoreEntity().getId())
+                .storeId(inventoryEntity.getStoreEntity() != null ? inventoryEntity.getStoreEntity().getId() : null)
                 .lastUpdated(inventoryEntity.getLastUpdated())
                 .lowStockThreshold(inventoryEntity.getLowStockThreshold())
                 .build();

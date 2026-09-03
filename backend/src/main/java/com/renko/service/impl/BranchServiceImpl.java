@@ -25,6 +25,7 @@ public class BranchServiceImpl implements BranchService
 {
     private final BranchRepository branchRepository;
     private final StoreRepository storeRepository;
+    private final UserRepository userRepository;
     private final UserService userService;
 
     @Override
@@ -34,6 +35,14 @@ public class BranchServiceImpl implements BranchService
         StoreEntity storeEntity = storeRepository.findByStoreAdmin_Id(currentUser.getId());
 
         BranchEntity branch = BranchMapper.toEntity(branchDto, storeEntity);
+
+        if(branchDto.getManagerId() != null)
+        {
+            UserEntity manager = userRepository.findById(branchDto.getManagerId())
+                    .orElseThrow(() -> new UserException("Manager not found with id: " + branchDto.getManagerId()));
+            branch.setUserEntity(manager);
+        }
+
         BranchEntity savedBranch = branchRepository.save(branch);
 
         return BranchMapper.toDto(savedBranch);

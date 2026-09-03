@@ -13,7 +13,7 @@ public interface OrderRepository extends JpaRepository<OrderEntity, Long>
     List<OrderEntity> findByStoreEntity_IdOrderByCreatedAtDesc(Long storeId);
     List<OrderEntity> findByCashierEntity_Id(Long cashierId);
     List<OrderEntity> findByStoreEntity_IdAndCreatedAtBetween(Long storeId, LocalDateTime from, LocalDateTime to);
-    List<OrderEntity> findByCashierEntityAndCreatedAtBetween(Long cashierId, LocalDateTime from, LocalDateTime to);
+    List<OrderEntity> findByCashierEntity_IdAndCreatedAtBetween(Long cashierId, LocalDateTime from, LocalDateTime to);
     List<OrderEntity> findTopFiveByStoreEntity_IdOrderByCreatedAtDesc(Long storeId);
 
     long countByStoreEntity_Id(Long storeId);

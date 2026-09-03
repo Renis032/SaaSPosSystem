@@ -2,7 +2,6 @@ package com.renko.entities;
 
 import com.renko.domain.StoreStatus;
 import com.renko.payload.dto.StoreDto;
-import jakarta.mail.Store;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -51,7 +50,7 @@ public class StoreEntity
     {
         updatedAt = LocalDateTime.now();
     }
-    
+
     public void setFromDto(StoreDto storeDto)
     {
         this.id = storeDto.getId();
@@ -60,5 +59,18 @@ public class StoreEntity
         this.storeType = storeDto.getStoreType();
         this.createdAt = storeDto.getCreatedAt();
         this.updatedAt = storeDto.getUpdatedAt();
+        if(storeDto.getStatus() != null)
+        {
+            this.status = storeDto.getStatus();
+        }
+        // Persist embedded contact fields from the DTO (email / phone / address)
+        if(storeDto.getContact() != null)
+        {
+            this.contact = StoreContactEntity.builder()
+                    .email(storeDto.getContact().getEmail())
+                    .phone(storeDto.getContact().getPhone())
+                    .address(storeDto.getContact().getAddress())
+                    .build();
+        }
     }
 }

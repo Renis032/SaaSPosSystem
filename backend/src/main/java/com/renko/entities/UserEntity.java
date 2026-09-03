@@ -1,5 +1,6 @@
 package com.renko.entities;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.renko.domain.UserRole;
 import com.renko.payload.dto.UserDto;
 import com.renko.payload.dto.updates.UserUpdateDto;
@@ -30,6 +31,7 @@ public class UserEntity
     private String email;
 
     @Column(nullable = false)
+    @JsonIgnore
     private String password;
 
     private String phoneNumber;

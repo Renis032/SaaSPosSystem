@@ -19,8 +19,6 @@ public class OrderItemDto
     private Double originalPrice;
     private Double discountApplied;
 
-    private ProductDto productDto;
-
     private Long productId;
 
     private Long orderId;

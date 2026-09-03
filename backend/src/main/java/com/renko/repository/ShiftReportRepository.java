@@ -2,7 +2,6 @@ package com.renko.repository;
 
 import com.renko.entities.ShiftReportEntity;
 import com.renko.entities.UserEntity;
-import com.renko.payload.dto.UserDto;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -16,7 +15,7 @@ public interface ShiftReportRepository extends JpaRepository<ShiftReportEntity, 
     List<ShiftReportEntity> findByCashierEntity_Id(Long id);
     List<ShiftReportEntity> findByStoreEntity_Id(Long storeId);
 
-    Optional<ShiftReportEntity> findTopByCashierEntityAndShiftEndIsNullOrderByShiftStartDesc(UserDto cashier);
+    Optional<ShiftReportEntity> findTopByCashierEntity_IdAndShiftEndIsNullOrderByShiftStartDesc(Long cashierId);
 
     Optional<ShiftReportEntity> findByCashierEntityAndShiftStartBetween(UserEntity cashier,
                                                                   LocalDateTime start,

@@ -19,7 +19,8 @@ public class BranchMapper
                         .closeTime(branchEntity.getCloseTime())
                         .createdAt(branchEntity.getCreatedAt())
                         .updatedAt(branchEntity.getUpdatedAt())
-                        .storeId(branchEntity.getStoreEntity().getId() != null ? branchEntity.getStoreEntity().getId() : null)
+                        .storeId(branchEntity.getStoreEntity() != null ? branchEntity.getStoreEntity().getId() : null)
+                        .managerId(branchEntity.getUserEntity() != null ? branchEntity.getUserEntity().getId() : null)
                         .build();
     }
 

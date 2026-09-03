@@ -9,14 +9,19 @@ public class RefundMapper
     {
         return RefundDto.builder()
                 .id(refundEntity.getId())
-                .order(OrderMapper.toDto(refundEntity.getOrder()))
-                .orderId(refundEntity.getOrder().getId())
+                .orderId(refundEntity.getOrder() != null ? refundEntity.getOrder().getId() : null)
                 .reason(refundEntity.getReason())
                 .amount(refundEntity.getAmount())
-                .shiftReportId(refundEntity.getShiftReportEntity().getId())
-                .cashierDto(UserMapper.toDto(refundEntity.getCashierEntity()))
-                .cashierName(refundEntity.getCashierEntity().getFullName())
-                .storeId(refundEntity.getStoreEntity().getId())
+                .shiftReportId(refundEntity.getShiftReportEntity() != null
+                        ? refundEntity.getShiftReportEntity().getId()
+                        : null)
+                .cashierId(refundEntity.getCashierEntity() != null
+                        ? refundEntity.getCashierEntity().getId()
+                        : null)
+                .cashierName(refundEntity.getCashierEntity() != null
+                        ? refundEntity.getCashierEntity().getFullName()
+                        : null)
+                .storeId(refundEntity.getStoreEntity() != null ? refundEntity.getStoreEntity().getId() : null)
                 .paymentType(refundEntity.getPaymentType())
                 .createdAt(refundEntity.getCreatedAt())
                 .updatedAt(refundEntity.getUpdatedAt())

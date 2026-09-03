@@ -2,13 +2,13 @@ package com.renko.controller;
 
 import com.renko.domain.StoreStatus;
 import com.renko.entities.StoreEntity;
+import com.renko.entities.UserEntity;
 import com.renko.exceptions.UserException;
 import com.renko.mapper.StoreMapper;
-import com.renko.entities.UserEntity;
-import com.renko.mapper.UserMapper;
 import com.renko.payload.dto.StoreDto;
 import com.renko.payload.dto.UserDto;
 import com.renko.payload.response.ApiResponse;
+import com.renko.repository.UserRepository;
 import com.renko.service.StoreService;
 import com.renko.service.UserService;
 import lombok.RequiredArgsConstructor;
@@ -24,6 +24,7 @@ public class StoreController
 {
     private final StoreService storeService;
     private final UserService userService;
+    private final UserRepository userRepository;
 
     @GetMapping
     public ResponseEntity<List<StoreDto>> getAllStores() throws UserException
@@ -42,7 +43,9 @@ public class StoreController
                                                 @RequestHeader("Authorization") String jwt) throws UserException
     {
         UserDto userDto = userService.getUserFromJwtToken(jwt);
-        return ResponseEntity.ok(storeService.createStore(storeDto, UserMapper.toEntity(userDto)));
+        UserEntity userEntity = userRepository.findById(userDto.getId())
+                .orElseThrow(() -> new UserException("User not found with id: " + userDto.getId()));
+        return ResponseEntity.ok(storeService.createStore(storeDto, userEntity));
     }
 
     @GetMapping("/{id}")

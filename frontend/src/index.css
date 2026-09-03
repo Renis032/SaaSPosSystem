@@ -52,6 +52,30 @@ textarea {
   color: #52606d;
 }
 
+.header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.btn-test {
+  background: #0e7c66;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  min-width: 5.5rem;
+}
+
+.btn-test:hover:not(:disabled) {
+  background: #065f4e;
+}
+
+.btn-test:disabled {
+  opacity: 0.7;
+  cursor: wait;
+}
+
 .token-pill {
   padding: 0.55rem 0.85rem;
   border-radius: 999px;

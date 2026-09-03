@@ -60,10 +60,10 @@ public class EmployeeServiceImpl implements EmployeeService
         }
 
         // Update store if provided
-        if(employeeDto.getStoreEntity() != null)
+        if(employeeDto.getStoreId() != null)
         {
-            StoreEntity storeEntity = storeRepository.findById(employeeDto.getStoreEntity().getId())
-                                                     .orElseThrow(() -> new Exception("Store not found with id: " + employeeDto.getStoreEntity().getId()
+            StoreEntity storeEntity = storeRepository.findById(employeeDto.getStoreId())
+                                                     .orElseThrow(() -> new Exception("Store not found with id: " + employeeDto.getStoreId()
                                                              + "; cannot reassign employeeId=" + employeeId));
 
             existingEmployee.setStoreEntity(storeEntity);

@@ -99,11 +99,6 @@ public class ProductEntity
             this.imageUrl = dto.getImageUrl();
         }
 
-        if(dto.getCategoryEntity() != null)
-        {
-            this.categoryEntity = dto.getCategoryEntity();
-        }
-
         this.updatedAt = LocalDateTime.now();
     }
 }

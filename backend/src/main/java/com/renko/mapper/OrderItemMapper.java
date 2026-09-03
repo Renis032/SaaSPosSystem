@@ -13,9 +13,8 @@ public class OrderItemMapper
                 .price(orderItemEntity.getPrice())
                 .originalPrice(orderItemEntity.getOriginalPrice())
                 .discountApplied(orderItemEntity.getDiscountApplied())
-                .productDto(ProductMapper.toDto(orderItemEntity.getProductEntity()))
-                .productId(orderItemEntity.getProductEntity().getId())
-                .orderId(orderItemEntity.getOrderEntity().getId())
+                .productId(orderItemEntity.getProductEntity() != null ? orderItemEntity.getProductEntity().getId() : null)
+                .orderId(orderItemEntity.getOrderEntity() != null ? orderItemEntity.getOrderEntity().getId() : null)
                 .build();
     }
 }

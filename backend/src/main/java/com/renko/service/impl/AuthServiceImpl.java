@@ -71,9 +71,13 @@ public class AuthServiceImpl implements AuthService
         UserEntity savedUserEntity = userRepository.save(newUserEntity);
 
         // Create an Authentication object representing the newly registered user
-        // At this point this does NOT mean that the user has been fully authenticated
-        // It simply creates the authentication information that Spring Security can use
-        Authentication authentication = new UsernamePasswordAuthenticationToken(authRequestDto.getEmail(), authRequestDto.getPassword());
+        // Load UserDetails so the JWT includes the user's authorities/role
+        UserDetails userDetails = customUserDetailsService.loadUserByUsername(savedUserEntity.getEmail());
+        Authentication authentication = new UsernamePasswordAuthenticationToken(
+                userDetails,
+                null,
+                userDetails.getAuthorities()
+        );
 
         // Store the Authentication object in Spring Security's SecurityContext
         // The SecurityContext represents the currently authenticated user for this request.

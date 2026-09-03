@@ -56,7 +56,7 @@ public class InventoryServiceImpl implements InventoryService
                                                                   + "; cannot update inventoryId=" + id)));
         }
 
-        if(inventoryDto.getProductDto() != null)
+        if(inventoryDto.getProductId() != null)
         {
             inventoryEntity.setProductEntity(productRepository.findById(inventoryDto.getProductId())
                     .orElseThrow(() -> new Exception("Product not found with id: " + inventoryDto.getProductId()

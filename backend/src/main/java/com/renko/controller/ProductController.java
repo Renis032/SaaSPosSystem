@@ -1,12 +1,11 @@
 package com.renko.controller;
 
-import com.renko.entities.ProductEntity;
 import com.renko.entities.UserEntity;
-import com.renko.mapper.UserMapper;
 import com.renko.payload.dto.ProductDto;
 import com.renko.payload.dto.UserDto;
 import com.renko.payload.dto.updates.ProductUpdateDto;
 import com.renko.payload.response.ApiResponse;
+import com.renko.repository.UserRepository;
 import com.renko.service.ProductService;
 import com.renko.service.UserService;
 import lombok.RequiredArgsConstructor;
@@ -22,13 +21,16 @@ public class ProductController
 {
     private final ProductService productService;
     private final UserService userService;
+    private final UserRepository userRepository;
 
     @PostMapping
     public ResponseEntity<ProductDto> createProduct(@RequestBody ProductDto productDto,
                                                     @RequestHeader("Authorization") String jwt) throws Exception
     {
         UserDto userDto = userService.getUserFromJwtToken(jwt);
-        return ResponseEntity.ok(productService.createProduct(productDto, UserMapper.toEntity(userDto)));
+        UserEntity userEntity = userRepository.findById(userDto.getId())
+                .orElseThrow(() -> new Exception("User not found with id: " + userDto.getId()));
+        return ResponseEntity.ok(productService.createProduct(productDto, userEntity));
     }
 
 
@@ -53,7 +55,9 @@ public class ProductController
                                                      @RequestHeader("Authorization") String jwt) throws Exception
     {
         UserDto userDto = userService.getUserFromJwtToken(jwt);
-        productService.deleteProduct(id, UserMapper.toEntity(userDto));
+        UserEntity userEntity = userRepository.findById(userDto.getId())
+                .orElseThrow(() -> new Exception("User not found with id: " + userDto.getId()));
+        productService.deleteProduct(id, userEntity);
 
         ApiResponse apiResponse = new ApiResponse();
         apiResponse.setMessage("Product deleted successfully");

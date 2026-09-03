@@ -1,7 +1,5 @@
 package com.renko.payload.dto;
 
-import com.renko.entities.StoreEntity;
-import com.renko.entities.UserEntity;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import lombok.AllArgsConstructor;
@@ -34,9 +32,7 @@ public class BranchDto
     private LocalDateTime updatedAt;
 
     private Long storeId;
-
-    private StoreDto storeDto;
-    private UserDto manager;
+    private Long managerId;
 
     @PrePersist
     protected void onCreate()

@@ -9,6 +9,8 @@ import com.renko.payload.dto.UserDto;
 import com.renko.repository.InventoryRepository;
 import com.renko.repository.OrderRepository;
 import com.renko.repository.RefundRepository;
+import com.renko.repository.ShiftReportRepository;
+import com.renko.repository.UserRepository;
 import com.renko.service.BillingService;
 import com.renko.service.RefundService;
 import com.renko.service.UserService;
@@ -26,9 +28,11 @@ public class RefundServiceImpl implements RefundService
 {
     private final RefundRepository refundRepository;
     private final UserService userService;
+    private final UserRepository userRepository;
     private final OrderRepository orderRepository;
     private final InventoryRepository inventoryRepository;
     private final BillingService billingService;
+    private final ShiftReportRepository shiftReportRepository;
 
     @Override
     public RefundDto createRefund(RefundDto refundDto) throws Exception
@@ -45,6 +49,20 @@ public class RefundServiceImpl implements RefundService
         }
 
         UserDto cashier = userService.getCurrentUser();
+        UserEntity cashierEntity = userRepository.findById(cashier.getId())
+                .orElseThrow(() -> new EntityNotFoundException(
+                        "Cashier not found with id: " + cashier.getId() + "; cannot create refund"
+                ));
+
+        ShiftReportEntity shiftReport = null;
+        if(refundDto.getShiftReportId() != null)
+        {
+            shiftReport = shiftReportRepository.findById(refundDto.getShiftReportId())
+                    .orElseThrow(() -> new EntityNotFoundException(
+                            "Shift report not found with id: " + refundDto.getShiftReportId()
+                            + "; cannot create refund for orderId=" + refundDto.getOrderId()
+                    ));
+        }
 
         if(order.getPaymentType() == PaymentType.CARD
            && order.getStripePaymentIntentId() != null
@@ -75,10 +93,12 @@ public class RefundServiceImpl implements RefundService
 
         RefundEntity refund = RefundEntity.builder()
                 .order(order)
+                .reason(refundDto.getReason())
                 .amount(refundDto.getAmount())
-                .cashierEntity(UserMapper.toEntity(cashier))
+                .shiftReportEntity(shiftReport)
+                .cashierEntity(cashierEntity)
                 .storeEntity(store)
-                .paymentType(order.getPaymentType())
+                .paymentType(refundDto.getPaymentType() != null ? refundDto.getPaymentType() : order.getPaymentType())
                 .build();
 
         RefundEntity saved = refundRepository.save(refund);

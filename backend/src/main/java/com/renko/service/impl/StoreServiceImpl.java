@@ -9,6 +9,7 @@ import com.renko.entities.UserEntity;
 import com.renko.payload.dto.StoreDto;
 import com.renko.payload.dto.UserDto;
 import com.renko.repository.StoreRepository;
+import com.renko.repository.UserRepository;
 import com.renko.service.StoreService;
 import com.renko.service.UserService;
 import lombok.RequiredArgsConstructor;
@@ -22,14 +23,24 @@ import java.util.Map;
 public class StoreServiceImpl implements StoreService
 {
     private final StoreRepository storeRepository;
+    private final UserRepository userRepository;
     private final UserService userService;
 
     @Override
     public StoreDto createStore(StoreDto storeDto, UserEntity userEntity)
     {
-        StoreEntity storeEntity = StoreMapper.toEntity(storeDto, userEntity);
+        UserEntity storeAdmin = userRepository.findById(userEntity.getId())
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "Cannot create store: user not found with id: " + userEntity.getId()
+                ));
 
+        StoreEntity storeEntity = StoreMapper.toEntity(storeDto, storeAdmin);
         StoreEntity savedStoreEntity = storeRepository.save(storeEntity);
+
+        // Link owner/admin to store so order/shift flows can resolve storeId from JWT user
+        storeAdmin.setStoreEntity(savedStoreEntity);
+        userRepository.save(storeAdmin);
+
         return StoreMapper.toDto(savedStoreEntity);
     }
 

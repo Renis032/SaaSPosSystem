@@ -1,6 +1,5 @@
 package com.renko.payload.dto;
 
-import com.renko.entities.CategoryEntity;
 import com.renko.entities.ProductEntity;
 import lombok.Data;
 
@@ -25,7 +24,7 @@ public class ProductDto
 
     private String imageUrl;
 
-    private CategoryEntity categoryEntity;
+    private Long categoryId;
 
     private Long storeId;
 
@@ -42,8 +41,17 @@ public class ProductDto
         this.sellingPrice = productEntity.getSellingPrice();
         this.brand = productEntity.getBrand();
         this.imageUrl = productEntity.getImageUrl();
-        this.categoryEntity = productEntity.getCategoryEntity();
         this.createdAt = productEntity.getCreatedAt();
         this.updatedAt = productEntity.getUpdatedAt();
+
+        if(productEntity.getCategoryEntity() != null)
+        {
+            this.categoryId = productEntity.getCategoryEntity().getId();
+        }
+
+        if(productEntity.getStoreEntity() != null)
+        {
+            this.storeId = productEntity.getStoreEntity().getId();
+        }
     }
 }

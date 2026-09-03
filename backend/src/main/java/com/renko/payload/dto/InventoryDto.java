@@ -14,7 +14,6 @@ import java.time.LocalDateTime;
 public class InventoryDto
 {
     private Long id;
-    private ProductDto productDto;
     private Integer quantity;
 
     private Long storeId;

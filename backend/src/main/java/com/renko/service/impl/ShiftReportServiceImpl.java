@@ -4,17 +4,14 @@ import com.renko.domain.PaymentType;
 import com.renko.entities.*;
 import com.renko.exceptions.UserException;
 import com.renko.mapper.ShiftReportMapper;
-import com.renko.mapper.StoreMapper;
-import com.renko.mapper.UserMapper;
 import com.renko.payload.dto.ShiftReportDto;
-import com.renko.payload.dto.StoreDto;
 import com.renko.payload.dto.UserDto;
 import com.renko.repository.OrderRepository;
 import com.renko.repository.RefundRepository;
 import com.renko.repository.ShiftReportRepository;
+import com.renko.repository.StoreRepository;
 import com.renko.repository.UserRepository;
 import com.renko.service.ShiftReportService;
-import com.renko.service.StoreService;
 import com.renko.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -32,7 +29,7 @@ public class ShiftReportServiceImpl implements ShiftReportService
     private final ShiftReportRepository shiftReportRepository;
     private final OrderRepository orderRepository;
     private final RefundRepository refundRepository;
-    private final StoreService storeService;
+    private final StoreRepository storeRepository;
     private final UserService userService;
     private final UserRepository userRepository;
 
@@ -42,7 +39,8 @@ public class ShiftReportServiceImpl implements ShiftReportService
         UserDto currentUser = userService.getCurrentUser();
         LocalDateTime shiftStart = LocalDateTime.now();
 
-        Optional<ShiftReportEntity> existing = shiftReportRepository.findTopByCashierEntityAndShiftEndIsNullOrderByShiftStartDesc(currentUser);
+        Optional<ShiftReportEntity> existing = shiftReportRepository
+                .findTopByCashierEntity_IdAndShiftEndIsNullOrderByShiftStartDesc(currentUser.getId());
 
         if(existing.isPresent())
         {
@@ -52,12 +50,22 @@ public class ShiftReportServiceImpl implements ShiftReportService
                     + ", shiftStart=" + existing.get().getShiftStart());
         }
 
-        StoreDto store = storeService.getStoreById(currentUser.getStoreId());
+        if(currentUser.getStoreId() == null)
+        {
+            throw new Exception("Cashier has no storeId; cannot start shift. userId="
+                    + currentUser.getId() + ", email=" + currentUser.getEmail());
+        }
+
+        UserEntity cashierEntity = userRepository.findById(currentUser.getId())
+                .orElseThrow(() -> new Exception("Cashier not found with id: " + currentUser.getId()));
+        StoreEntity store = storeRepository.findById(currentUser.getStoreId())
+                .orElseThrow(() -> new Exception("Store not found with id: " + currentUser.getStoreId()
+                        + "; cannot start shift for cashierId=" + currentUser.getId()));
 
         ShiftReportEntity shiftReport = ShiftReportEntity.builder()
                 .shiftStart(shiftStart)
-                .cashierEntity(UserMapper.toEntity(currentUser))
-                .storeEntity(StoreMapper.toEntity(store, UserMapper.toEntity(currentUser)))
+                .cashierEntity(cashierEntity)
+                .storeEntity(store)
                 .topSellingProducts(new ArrayList<>())
                 .recentOrders(new ArrayList<>())
                 .refunds(new ArrayList<>())
@@ -72,7 +80,8 @@ public class ShiftReportServiceImpl implements ShiftReportService
     {
         UserDto cashier =  userService.getCurrentUser();
 
-        ShiftReportEntity shiftReport = shiftReportRepository.findTopByCashierEntityAndShiftEndIsNullOrderByShiftStartDesc(cashier)
+        ShiftReportEntity shiftReport = shiftReportRepository
+                .findTopByCashierEntity_IdAndShiftEndIsNullOrderByShiftStartDesc(cashier.getId())
                 .orElseThrow(() -> new Exception("No active shift found for cashierId=" + cashier.getId()
                         + ", email=" + cashier.getEmail()
                         + (shiftReportId != null ? ", requestedShiftReportId=" + shiftReportId : "")));
@@ -86,7 +95,7 @@ public class ShiftReportServiceImpl implements ShiftReportService
         double totalRefunds = refunds.stream()
                 .mapToDouble(refund -> refund.getAmount() != null ? refund.getAmount() : 0.0).sum();
 
-        List<OrderEntity> orders = orderRepository.findByCashierEntityAndCreatedAtBetween(cashier.getId(),
+        List<OrderEntity> orders = orderRepository.findByCashierEntity_IdAndCreatedAtBetween(cashier.getId(),
                 shiftReport.getShiftStart(),
                 shiftReport.getShiftEnd());
 
@@ -146,7 +155,8 @@ public class ShiftReportServiceImpl implements ShiftReportService
     {
         UserDto cashier = userService.getCurrentUser();
 
-        ShiftReportEntity shiftReport = shiftReportRepository.findTopByCashierEntityAndShiftEndIsNullOrderByShiftStartDesc(cashier)
+        ShiftReportEntity shiftReport = shiftReportRepository
+                .findTopByCashierEntity_IdAndShiftEndIsNullOrderByShiftStartDesc(cashier.getId())
                 .orElse(null);
 
         if(shiftReport == null)
@@ -156,7 +166,7 @@ public class ShiftReportServiceImpl implements ShiftReportService
 
         LocalDateTime now = LocalDateTime.now();
 
-        List<OrderEntity> orders = orderRepository.findByCashierEntityAndCreatedAtBetween(cashier.getId(), shiftReport.getShiftStart(), now);
+        List<OrderEntity> orders = orderRepository.findByCashierEntity_IdAndCreatedAtBetween(cashier.getId(), shiftReport.getShiftStart(), now);
 
         List<RefundEntity> refunds = refundRepository.findByCashierEntity_IdAndCreatedAtBetween(cashier.getId(), shiftReport.getShiftStart(), now);
 

@@ -7,7 +7,6 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
@@ -73,14 +72,13 @@ public class JwtValidator extends OncePerRequestFilter
             }
             catch(Exception e)
             {
+                // Do not abort the filter chain here.
+                // Throwing from a security filter returns an empty 500 and blocks public
+                // endpoints like /auth/signup when the browser still has a stale JWT.
+                // Protected /api/** routes are still rejected by .authenticated().
                 System.out.println("JWT ERROR: " + e.getClass().getName());
                 System.out.println("JWT MESSAGE: " + e.getMessage());
-                e.printStackTrace();
-
-                throw new BadCredentialsException(
-                        "Invalid JWT token: " + e.getMessage(),
-                        e
-                );
+                SecurityContextHolder.clearContext();
             }
         }
 

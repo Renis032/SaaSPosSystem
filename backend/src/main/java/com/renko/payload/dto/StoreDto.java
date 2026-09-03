@@ -1,9 +1,9 @@
 package com.renko.payload.dto;
 
 import com.renko.domain.StoreStatus;
-import com.renko.mapper.UserMapper;
 import com.renko.entities.StoreEntity;
 import com.renko.entities.StoreContactEntity;
+import com.renko.payload.dto.StoreDto;
 import lombok.Data;
 
 import java.time.LocalDateTime;
@@ -32,7 +32,7 @@ public class StoreDto
     {
         this.id = storeEntity.getId();
         this.brandName = storeEntity.getBrandName();
-        this.storeAdminId = storeEntity.getStoreAdmin().getId();
+        this.storeAdminId = storeEntity.getStoreAdmin() != null ? storeEntity.getStoreAdmin().getId() : null;
         this.createdAt = storeEntity.getCreatedAt();
         this.updatedAt = storeEntity.getUpdatedAt();
         this.description = storeEntity.getDescription();

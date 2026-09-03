@@ -1,7 +1,5 @@
 package com.renko.payload.dto;
 
-import com.renko.entities.*;
-import jakarta.persistence.*;
 import lombok.Builder;
 import lombok.Data;
 
@@ -25,8 +23,8 @@ public class ShiftReportDto
     private Long cashierId;
     private Long storeId;
 
-    private List<PaymentSummaryEntity> paymentSummaries;
-    private List<ProductDto> topSellingProducts;
-    private List<OrderDto> recentOrders;
-    private List<RefundDto> refunds;
+    private List<PaymentSummaryDto> paymentSummaries;
+    private List<Long> topSellingProductIds;
+    private List<Long> recentOrderIds;
+    private List<Long> refundIds;
 }
