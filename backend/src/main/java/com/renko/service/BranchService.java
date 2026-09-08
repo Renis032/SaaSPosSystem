@@ -14,5 +14,5 @@ public interface BranchService
     List<BranchDto> getAllBranches();
     void deleteBranch(Long id) throws Exception;
     void deleteAllBranches();
-    List<BranchDto> getAllBranchesByStoreId(Long id);
+    List<BranchDto> getAllBranchesByStoreId(Long id) throws Exception;
 }

@@ -27,7 +27,7 @@ public class BranchEntity
     private String phone;
     private String email;
 
-    @ElementCollection
+    @ElementCollection(fetch = FetchType.EAGER)
     private List<String> workdays;
 
     private LocalTime openTime;

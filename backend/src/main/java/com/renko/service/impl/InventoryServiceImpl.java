@@ -3,6 +3,8 @@ package com.renko.service.impl;
 import com.renko.entities.InventoryEntity;
 import com.renko.entities.ProductEntity;
 import com.renko.entities.StoreEntity;
+import com.renko.exceptions.ExceptionMessages;
+import com.renko.exceptions.UserException;
 import com.renko.mapper.InventoryMapper;
 import com.renko.payload.dto.InventoryDto;
 import com.renko.payload.dto.updates.InventoryUpdateDto;
@@ -10,7 +12,9 @@ import com.renko.payload.response.ApiResponse;
 import com.renko.repository.InventoryRepository;
 import com.renko.repository.ProductRepository;
 import com.renko.repository.StoreRepository;
+import com.renko.service.AuditLogService;
 import com.renko.service.InventoryService;
+import com.renko.service.StoreAccessService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -25,17 +29,44 @@ public class InventoryServiceImpl implements InventoryService
     private final InventoryRepository inventoryRepository;
     private final StoreRepository storeRepository;
     private final ProductRepository productRepository;
+    private final StoreAccessService storeAccessService;
+    private final AuditLogService auditLogService;
 
     @Override
     public InventoryDto createInventory(InventoryDto inventoryDto) throws Exception
     {
+        if(inventoryDto.getStoreId() == null)
+        {
+            throw ExceptionMessages.required(
+                    "storeId",
+                    "storeId is required to create inventory. Create a store first."
+            );
+        }
+        if(inventoryDto.getProductId() == null)
+        {
+            throw ExceptionMessages.required(
+                    "productId",
+                    "productId is required to create inventory. Create a product first."
+            );
+        }
+
+        storeAccessService.requireStoreAccess(inventoryDto.getStoreId());
+
         StoreEntity storeEntity = storeRepository.findById(inventoryDto.getStoreId())
-                                                 .orElseThrow(() -> new Exception("Store not found with id: " + inventoryDto.getStoreId()
-                                                         + "; cannot create inventory for productId=" + inventoryDto.getProductId()));
+                .orElseThrow(() -> ExceptionMessages.notFound(
+                        "Store",
+                        inventoryDto.getStoreId(),
+                        "create inventory for productId=" + inventoryDto.getProductId()
+                ));
 
         ProductEntity productEntity = productRepository.findById(inventoryDto.getProductId())
-                                                       .orElseThrow(() -> new Exception("Product not found with id: " + inventoryDto.getProductId()
-                                                               + "; cannot create inventory for storeId=" + inventoryDto.getStoreId()));
+                .orElseThrow(() -> ExceptionMessages.notFound(
+                        "Product",
+                        inventoryDto.getProductId(),
+                        "create inventory for storeId=" + inventoryDto.getStoreId()
+                ));
+
+        assertProductBelongsToStore(productEntity, storeEntity.getId(), "create inventory");
 
         InventoryEntity inventoryEntity = InventoryMapper.toEntity(inventoryDto, storeEntity, productEntity);
         InventoryEntity savedInventory = inventoryRepository.save(inventoryEntity);
@@ -47,20 +78,31 @@ public class InventoryServiceImpl implements InventoryService
     public InventoryDto updateInventory(Long id, InventoryUpdateDto inventoryDto) throws Exception
     {
         InventoryEntity inventoryEntity = inventoryRepository.findById(id)
-                .orElseThrow(() -> new Exception("Inventory not found with id: " + id + "; cannot update"));
+                .orElseThrow(() -> ExceptionMessages.notFound("Inventory", id, "update"));
 
         if(inventoryDto.getStoreId() != null)
         {
             inventoryEntity.setStoreEntity(storeRepository.findById(inventoryDto.getStoreId())
-                                                          .orElseThrow(() -> new Exception("Store not found with id: " + inventoryDto.getStoreId()
-                                                                  + "; cannot update inventoryId=" + id)));
+                    .orElseThrow(() -> ExceptionMessages.notFound(
+                            "Store",
+                            inventoryDto.getStoreId(),
+                            "update inventoryId=" + id
+                    )));
         }
 
         if(inventoryDto.getProductId() != null)
         {
-            inventoryEntity.setProductEntity(productRepository.findById(inventoryDto.getProductId())
-                    .orElseThrow(() -> new Exception("Product not found with id: " + inventoryDto.getProductId()
-                            + "; cannot update inventoryId=" + id)));
+            ProductEntity productEntity = productRepository.findById(inventoryDto.getProductId())
+                    .orElseThrow(() -> ExceptionMessages.notFound(
+                            "Product",
+                            inventoryDto.getProductId(),
+                            "update inventoryId=" + id
+                    ));
+            Long storeId = inventoryEntity.getStoreEntity() != null
+                    ? inventoryEntity.getStoreEntity().getId()
+                    : null;
+            assertProductBelongsToStore(productEntity, storeId, "update inventoryId=" + id);
+            inventoryEntity.setProductEntity(productEntity);
         }
 
         if(inventoryDto.getQuantity() != null)
@@ -80,9 +122,11 @@ public class InventoryServiceImpl implements InventoryService
     }
 
     @Override
-    public ApiResponse deleteInventory(Long id)
+    public ApiResponse deleteInventory(Long id) throws Exception
     {
-        inventoryRepository.deleteById(id);
+        InventoryEntity inventoryEntity = inventoryRepository.findById(id)
+                .orElseThrow(() -> ExceptionMessages.notFound("Inventory", id, "delete"));
+        inventoryRepository.delete(inventoryEntity);
 
         ApiResponse apiResponse = new ApiResponse();
         apiResponse.setMessage("Inventory deleted successfully");
@@ -100,7 +144,7 @@ public class InventoryServiceImpl implements InventoryService
     public InventoryDto getInventoryById(Long id) throws Exception
     {
         InventoryEntity inventoryEntity = inventoryRepository.findById(id)
-                                                             .orElseThrow(() -> new Exception("Inventory not found with id: " + id));
+                .orElseThrow(() -> ExceptionMessages.notFound("Inventory", id));
 
         return InventoryMapper.toDto(inventoryEntity);
     }
@@ -114,36 +158,42 @@ public class InventoryServiceImpl implements InventoryService
     }
 
     @Override
-    public InventoryDto getInventoryByStoreIdAndProductId(Long storeId, Long productId)
+    public List<InventoryDto> getInventoryByStoreId(Long storeId) throws Exception
     {
-        InventoryEntity inventoryEntity = inventoryRepository.findByStoreEntity_IdAndProductEntity_Id(storeId, productId);
-        return inventoryEntity != null ? InventoryMapper.toDto(inventoryEntity) : null;
-    }
-
-    @Override
-    public List<InventoryDto> getInventoryByStoreId(Long storeId)
-    {
+        storeAccessService.requireStoreAccess(storeId);
         return inventoryRepository.findByStoreEntity_Id(storeId).stream()
                 .map(InventoryMapper::toDto)
                 .collect(Collectors.toList());
     }
 
     @Override
-    public List<InventoryDto> getLowStockByStoreId(Long storeId)
+    public List<InventoryDto> getLowStockByStoreId(Long storeId) throws Exception
     {
+        storeAccessService.requireStoreAccess(storeId);
         return inventoryRepository.findByStoreEntity_Id(storeId).stream()
                 .filter(inv -> inv.getQuantity() <= inv.getLowStockThreshold())
                 .map(InventoryMapper::toDto)
-                .sorted((a, b) -> Integer.compare(a.getQuantity(), b.getQuantity())) // Lowest first
+                .sorted((a, b) -> Integer.compare(a.getQuantity(), b.getQuantity()))
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public InventoryDto getInventoryByStoreIdAndProductId(Long storeId, Long productId) throws Exception
+    {
+        storeAccessService.requireStoreAccess(storeId);
+        InventoryEntity inventoryEntity = inventoryRepository.findByStoreEntity_IdAndProductEntity_Id(storeId, productId);
+        return inventoryEntity != null ? InventoryMapper.toDto(inventoryEntity) : null;
     }
 
     @Override
     public InventoryDto updateLowStockThreshold(Long id, Integer threshold) throws Exception
     {
         InventoryEntity inventoryEntity = inventoryRepository.findById(id)
-                                                             .orElseThrow(() -> new Exception("Inventory not found with id: " + id
-                                                                     + "; cannot set lowStockThreshold=" + threshold));
+                .orElseThrow(() -> ExceptionMessages.notFound(
+                        "Inventory",
+                        id,
+                        "set lowStockThreshold=" + threshold
+                ));
 
         inventoryEntity.setLowStockThreshold(threshold);
         InventoryEntity updatedInventory = inventoryRepository.save(inventoryEntity);
@@ -155,12 +205,89 @@ public class InventoryServiceImpl implements InventoryService
     public InventoryDto addStock(Long id, Integer quantity) throws Exception
     {
         InventoryEntity inventoryEntity = inventoryRepository.findById(id)
-                .orElseThrow(() -> new Exception("Inventory not found with id: " + id
-                        + "; cannot addStock quantity=" + quantity));
+                .orElseThrow(() -> ExceptionMessages.notFound(
+                        "Inventory",
+                        id,
+                        "addStock quantity=" + quantity
+                ));
+
+        if(inventoryEntity.getStoreEntity() != null)
+        {
+            storeAccessService.requireStoreAccess(inventoryEntity.getStoreEntity().getId());
+        }
 
         inventoryEntity.setQuantity(inventoryEntity.getQuantity() + quantity);
         InventoryEntity updatedInventory = inventoryRepository.save(inventoryEntity);
+        auditLogService.record(
+                inventoryEntity.getStoreEntity() != null ? inventoryEntity.getStoreEntity().getId() : null,
+                "INVENTORY_ADD",
+                "Inventory",
+                String.valueOf(id),
+                "Added quantity=" + quantity
+        );
 
         return InventoryMapper.toDto(updatedInventory);
+    }
+
+    @Override
+    public InventoryDto adjustStock(Long id, Integer delta, String reason) throws Exception
+    {
+        if(delta == null || delta == 0)
+        {
+            throw ExceptionMessages.required("delta", "Stock adjustment delta must be a non-zero integer");
+        }
+
+        InventoryEntity inventoryEntity = inventoryRepository.findById(id)
+                .orElseThrow(() -> ExceptionMessages.notFound("Inventory", id, "adjust stock"));
+
+        if(inventoryEntity.getStoreEntity() != null)
+        {
+            storeAccessService.requireStoreAccess(inventoryEntity.getStoreEntity().getId());
+        }
+
+        int next = inventoryEntity.getQuantity() + delta;
+        if(next < 0)
+        {
+            throw UserException.withDetails(
+                    "Adjustment would make stock negative",
+                    ExceptionMessages.ctx(
+                            "inventoryId", id,
+                            "current", inventoryEntity.getQuantity(),
+                            "delta", delta
+                    )
+            );
+        }
+
+        inventoryEntity.setQuantity(next);
+        InventoryEntity saved = inventoryRepository.save(inventoryEntity);
+        auditLogService.record(
+                inventoryEntity.getStoreEntity() != null ? inventoryEntity.getStoreEntity().getId() : null,
+                "INVENTORY_ADJUST",
+                "Inventory",
+                String.valueOf(id),
+                "delta=" + delta + (reason != null ? "; reason=" + reason : "")
+        );
+        return InventoryMapper.toDto(saved);
+    }
+
+    private void assertProductBelongsToStore(ProductEntity productEntity, Long storeId, String action)
+            throws Exception
+    {
+        if(storeId == null)
+        {
+            return;
+        }
+        if(productEntity.getStoreEntity() == null
+           || false == storeId.equals(productEntity.getStoreEntity().getId()))
+        {
+            throw ExceptionMessages.mismatch(
+                    "Product does not belong to the inventory store; cannot " + action,
+                    "productId", productEntity.getId(),
+                    "productStoreId", productEntity.getStoreEntity() != null
+                            ? productEntity.getStoreEntity().getId()
+                            : null,
+                    "storeId", storeId
+            );
+        }
     }
 }

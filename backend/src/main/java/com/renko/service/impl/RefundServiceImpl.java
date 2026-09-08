@@ -2,8 +2,9 @@ package com.renko.service.impl;
 
 import com.renko.domain.PaymentType;
 import com.renko.entities.*;
+import com.renko.exceptions.ExceptionMessages;
+import com.renko.exceptions.UserException;
 import com.renko.mapper.RefundMapper;
-import com.renko.mapper.UserMapper;
 import com.renko.payload.dto.RefundDto;
 import com.renko.payload.dto.UserDto;
 import com.renko.repository.InventoryRepository;
@@ -11,10 +12,11 @@ import com.renko.repository.OrderRepository;
 import com.renko.repository.RefundRepository;
 import com.renko.repository.ShiftReportRepository;
 import com.renko.repository.UserRepository;
+import com.renko.service.AuditLogService;
 import com.renko.service.BillingService;
 import com.renko.service.RefundService;
+import com.renko.service.StoreAccessService;
 import com.renko.service.UserService;
-import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -33,34 +35,55 @@ public class RefundServiceImpl implements RefundService
     private final InventoryRepository inventoryRepository;
     private final BillingService billingService;
     private final ShiftReportRepository shiftReportRepository;
+    private final StoreAccessService storeAccessService;
+    private final AuditLogService auditLogService;
 
     @Override
     public RefundDto createRefund(RefundDto refundDto) throws Exception
     {
+        if(refundDto.getOrderId() == null)
+        {
+            throw ExceptionMessages.required(
+                    "orderId",
+                    "orderId is required to create a refund. Create an order first."
+            );
+        }
+
         OrderEntity order = orderRepository.findById(refundDto.getOrderId())
-                .orElseThrow(() -> new EntityNotFoundException(
-                        "Order not found with id: " + refundDto.getOrderId() + "; cannot create refund"));
+                .orElseThrow(() -> ExceptionMessages.notFound(
+                        "Order",
+                        refundDto.getOrderId(),
+                        "create refund"
+                ));
 
         StoreEntity store = order.getStoreEntity();
         if(store == null)
         {
-            throw new EntityNotFoundException("Order id=" + refundDto.getOrderId()
-                    + " has no linked store; cannot create refund amount=" + refundDto.getAmount());
+            throw ExceptionMessages.notFound(
+                    "Store",
+                    null,
+                    "create refund for orderId=" + refundDto.getOrderId()
+                            + " (order has no linked store)"
+            );
         }
+        storeAccessService.requireStoreAccess(store.getId());
 
         UserDto cashier = userService.getCurrentUser();
         UserEntity cashierEntity = userRepository.findById(cashier.getId())
-                .orElseThrow(() -> new EntityNotFoundException(
-                        "Cashier not found with id: " + cashier.getId() + "; cannot create refund"
+                .orElseThrow(() -> ExceptionMessages.notFound(
+                        "Cashier",
+                        cashier.getId(),
+                        "create refund"
                 ));
 
         ShiftReportEntity shiftReport = null;
         if(refundDto.getShiftReportId() != null)
         {
             shiftReport = shiftReportRepository.findById(refundDto.getShiftReportId())
-                    .orElseThrow(() -> new EntityNotFoundException(
-                            "Shift report not found with id: " + refundDto.getShiftReportId()
-                            + "; cannot create refund for orderId=" + refundDto.getOrderId()
+                    .orElseThrow(() -> ExceptionMessages.notFound(
+                            "Shift report",
+                            refundDto.getShiftReportId(),
+                            "create refund for orderId=" + refundDto.getOrderId()
                     ));
         }
 
@@ -79,13 +102,35 @@ public class RefundServiceImpl implements RefundService
             }
         }
 
-        for(var item : order.getItems())
+        if(order.getItems() != null)
         {
-            InventoryEntity inventory = inventoryRepository.findByStoreEntity_IdAndProductEntity_Id(store.getId(),
-                                                                                                    item.getProductEntity().getId());
-
-            if(inventory != null)
+            for(var item : order.getItems())
             {
+                if(item.getProductEntity() == null || item.getProductEntity().getId() == null)
+                {
+                    throw ExceptionMessages.required(
+                            "productId",
+                            "Refund cannot restore inventory because an order item has no product"
+                    );
+                }
+
+                InventoryEntity inventory = inventoryRepository.findByStoreEntity_IdAndProductEntity_Id(
+                        store.getId(),
+                        item.getProductEntity().getId()
+                );
+
+                if(inventory == null)
+                {
+                    throw UserException.withDetails(
+                            "Cannot refund: product has no inventory row for this store",
+                            ExceptionMessages.ctx(
+                                    "productId", item.getProductEntity().getId(),
+                                    "storeId", store.getId(),
+                                    "orderId", order.getId()
+                            )
+                    );
+                }
+
                 inventory.setQuantity(inventory.getQuantity() + item.getQuantity());
                 inventoryRepository.save(inventory);
             }
@@ -102,6 +147,13 @@ public class RefundServiceImpl implements RefundService
                 .build();
 
         RefundEntity saved = refundRepository.save(refund);
+        auditLogService.record(
+                store.getId(),
+                "REFUND_CREATE",
+                "Refund",
+                String.valueOf(saved.getId()),
+                "orderId=" + order.getId() + "; amount=" + saved.getAmount()
+        );
         return RefundMapper.toDto(saved);
     }
 
@@ -140,8 +192,9 @@ public class RefundServiceImpl implements RefundService
     }
 
     @Override
-    public List<RefundDto> getRefundsByStore(Long storeId)
+    public List<RefundDto> getRefundsByStore(Long storeId) throws Exception
     {
+        storeAccessService.requireStoreAccess(storeId);
         return refundRepository.findByStoreEntity_Id(storeId).stream()
                 .map(RefundMapper::toDto)
                 .collect(Collectors.toList());
@@ -152,13 +205,15 @@ public class RefundServiceImpl implements RefundService
     {
         return refundRepository.findById(refundId)
                 .map(RefundMapper::toDto)
-                .orElseThrow(() -> new Exception("Refund not found with id: " + refundId));
+                .orElseThrow(() -> ExceptionMessages.notFound("Refund", refundId));
     }
 
     @Override
     public void deleteRefund(Long refundId)
     {
-        refundRepository.deleteById(refundId);
+        RefundEntity refund = refundRepository.findById(refundId)
+                .orElseThrow(() -> ExceptionMessages.notFound("Refund", refundId, "delete"));
+        refundRepository.delete(refund);
     }
 
     @Override

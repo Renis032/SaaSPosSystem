@@ -4,6 +4,7 @@ import com.renko.entities.CategoryEntity;
 import com.renko.entities.ProductEntity;
 import com.renko.entities.StoreEntity;
 import com.renko.entities.UserEntity;
+import com.renko.exceptions.ExceptionMessages;
 import com.renko.mapper.ProductMapper;
 import com.renko.payload.dto.ProductDto;
 import com.renko.payload.dto.updates.ProductUpdateDto;
@@ -12,6 +13,7 @@ import com.renko.repository.ProductRepository;
 import com.renko.repository.StoreRepository;
 import com.renko.repository.UserRepository;
 import com.renko.service.ProductService;
+import com.renko.service.StoreAccessService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -26,29 +28,43 @@ public class ProductServiceImpl implements ProductService
     private final StoreRepository storeRepository;
     private final CategoryRepository categoryRepository;
     private final UserRepository userRepository;
+    private final StoreAccessService storeAccessService;
 
     @Override
     public ProductDto createProduct(ProductDto productDto, UserEntity userEntity) throws Exception
     {
-        // Ensure caller exists in DB (do not trust a detached mapper entity)
         if(userEntity != null && userEntity.getId() != null)
         {
             userRepository.findById(userEntity.getId())
-                    .orElseThrow(() -> new Exception("User not found with id: " + userEntity.getId()
-                            + "; cannot create product '" + productDto.getName() + "'"));
+                    .orElseThrow(() -> ExceptionMessages.notFound(
+                            "User",
+                            userEntity.getId(),
+                            "create product '" + productDto.getName() + "'"
+                    ));
         }
+
+        if(productDto.getStoreId() == null)
+        {
+            throw ExceptionMessages.required(
+                    "storeId",
+                    "storeId is required to create a product. Create a store first."
+            );
+        }
+
+        storeAccessService.requireStoreAccess(productDto.getStoreId());
 
         StoreEntity storeEntity = storeRepository.findById(productDto.getStoreId())
-                                                 .orElseThrow(() -> new Exception("Store not found with id: " + productDto.getStoreId()
-                                                         + "; cannot create product '" + productDto.getName() + "'"));
+                .orElseThrow(() -> ExceptionMessages.notFound(
+                        "Store",
+                        productDto.getStoreId(),
+                        "create product '" + productDto.getName() + "'"
+                ));
 
-        CategoryEntity categoryEntity = null;
-        if(productDto.getCategoryId() != null)
-        {
-            categoryEntity = categoryRepository.findById(productDto.getCategoryId())
-                    .orElseThrow(() -> new Exception("Category not found with id: " + productDto.getCategoryId()
-                            + "; cannot create product '" + productDto.getName() + "'"));
-        }
+        CategoryEntity categoryEntity = resolveCategory(
+                productDto.getCategoryId(),
+                storeEntity.getId(),
+                "create product '" + productDto.getName() + "'"
+        );
 
         ProductEntity productEntity = ProductMapper.toEntity(productDto, storeEntity, categoryEntity);
         ProductEntity savedProduct = productRepository.save(productEntity);
@@ -60,7 +76,7 @@ public class ProductServiceImpl implements ProductService
     public ProductDto getProductById(Long id) throws Exception
     {
         ProductEntity productEntity = productRepository.findById(id)
-                .orElseThrow(() -> new Exception("Product not found with id: " + id));
+                .orElseThrow(() -> ExceptionMessages.notFound("Product", id));
         return ProductMapper.toDto(productEntity);
     }
 
@@ -76,19 +92,22 @@ public class ProductServiceImpl implements ProductService
     public ProductDto updateProduct(Long id, ProductUpdateDto productDto) throws Exception
     {
         ProductEntity productEntity = productRepository.findById(id)
-                .orElseThrow(() -> new Exception("Product not found with id: " + id + "; cannot update product"));
+                .orElseThrow(() -> ExceptionMessages.notFound("Product", id, "update"));
 
         productEntity.updateFrom(productDto);
 
         if(productDto.getCategoryId() != null)
         {
-            CategoryEntity categoryEntity = categoryRepository.findById(productDto.getCategoryId())
-                    .orElseThrow(() -> new Exception("Category not found with id: " + productDto.getCategoryId()
-                            + "; cannot update productId=" + id));
+            Long storeId = productEntity.getStoreEntity() != null ? productEntity.getStoreEntity().getId() : null;
+            CategoryEntity categoryEntity = resolveCategory(
+                    productDto.getCategoryId(),
+                    storeId,
+                    "update productId=" + id
+            );
             productEntity.setCategoryEntity(categoryEntity);
         }
 
-        productEntity.setCreatedAt(productEntity.getCreatedAt()); // CHECK
+        productEntity.setCreatedAt(productEntity.getCreatedAt());
         ProductEntity savedProduct = productRepository.save(productEntity);
 
         return ProductMapper.toDto(savedProduct);
@@ -98,8 +117,11 @@ public class ProductServiceImpl implements ProductService
     public void deleteProduct(Long id, UserEntity userEntity) throws Exception
     {
         ProductEntity productEntity = productRepository.findById(id)
-                                                       .orElseThrow(() -> new Exception("Product not found with id: " + id
-                                                               + "; cannot delete (requested by userId=" + (userEntity != null ? userEntity.getId() : null) + ")"));
+                .orElseThrow(() -> ExceptionMessages.notFound(
+                        "Product",
+                        id,
+                        "delete (requested by userId=" + (userEntity != null ? userEntity.getId() : null) + ")"
+                ));
 
         productRepository.delete(productEntity);
     }
@@ -111,8 +133,9 @@ public class ProductServiceImpl implements ProductService
     }
 
     @Override
-    public List<ProductDto> getProductsByStoreId(Long storeId)
+    public List<ProductDto> getProductsByStoreId(Long storeId) throws Exception
     {
+        storeAccessService.requireStoreAccess(storeId);
         List<ProductEntity> productEntities = productRepository.findByStoreEntity_Id(storeId);
 
         return productEntities.stream()
@@ -121,12 +144,40 @@ public class ProductServiceImpl implements ProductService
     }
 
     @Override
-    public List<ProductDto> searchByKeyword(Long storeId, String keyword)
+    public List<ProductDto> searchByKeyword(Long storeId, String keyword) throws Exception
     {
+        storeAccessService.requireStoreAccess(storeId);
         List<ProductEntity> productEntities = productRepository.searchByKeyword(storeId, keyword);
 
         return productEntities.stream()
                 .map(ProductMapper::toDto)
                 .collect(Collectors.toList());
+    }
+
+    private CategoryEntity resolveCategory(Long categoryId, Long storeId, String action) throws Exception
+    {
+        if(categoryId == null)
+        {
+            return null;
+        }
+
+        CategoryEntity categoryEntity = categoryRepository.findById(categoryId)
+                .orElseThrow(() -> ExceptionMessages.notFound("Category", categoryId, action));
+
+        if(storeId != null
+           && (categoryEntity.getStoreEntity() == null
+               || false == storeId.equals(categoryEntity.getStoreEntity().getId())))
+        {
+            throw ExceptionMessages.mismatch(
+                    "Category does not belong to the product's store",
+                    "categoryId", categoryId,
+                    "categoryStoreId", categoryEntity.getStoreEntity() != null
+                            ? categoryEntity.getStoreEntity().getId()
+                            : null,
+                    "storeId", storeId
+            );
+        }
+
+        return categoryEntity;
     }
 }

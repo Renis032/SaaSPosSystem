@@ -4,6 +4,7 @@ import com.renko.domain.UserRole;
 import com.renko.entities.CategoryEntity;
 import com.renko.entities.StoreEntity;
 import com.renko.entities.UserEntity;
+import com.renko.exceptions.ExceptionMessages;
 import com.renko.exceptions.UserException;
 import com.renko.mapper.CategoryMapper;
 import com.renko.payload.dto.CategoryDto;
@@ -12,6 +13,7 @@ import com.renko.repository.CategoryRepository;
 import com.renko.repository.StoreRepository;
 import com.renko.repository.UserRepository;
 import com.renko.service.CategoryService;
+import com.renko.service.StoreAccessService;
 import com.renko.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -27,20 +29,40 @@ public class CategoryServiceImpl implements CategoryService
     private final StoreRepository storeRepository;
     private final UserRepository userRepository;
     private final UserService userService;
+    private final StoreAccessService storeAccessService;
 
 
     @Override
     public CategoryDto createCategoryDto(CategoryDto categoryDto) throws Exception
     {
+        if(categoryDto.getStoreId() == null)
+        {
+            throw ExceptionMessages.required(
+                    "storeId",
+                    "storeId is required to create a category. Create a store first."
+            );
+        }
+
+        storeAccessService.requireStoreAccess(categoryDto.getStoreId());
+
         UserEntity userEntity = loadCurrentUser();
         StoreEntity storeEntity = storeRepository.findById(categoryDto.getStoreId())
-                                                 .orElseThrow(() -> new Exception("Store not found with id: " + categoryDto.getStoreId()
-                                                         + "; cannot create category '" + categoryDto.getName() + "'"));
+                .orElseThrow(() -> ExceptionMessages.notFound(
+                        "Store",
+                        categoryDto.getStoreId(),
+                        "create category '" + categoryDto.getName() + "'"
+                ));
 
         if(false == isAuthenticated(userEntity, storeEntity))
         {
-            throw new Exception("You do not have permission to create a category for storeId=" + categoryDto.getStoreId()
-                    + " as userId=" + userEntity.getId() + " with role=" + userEntity.getRole());
+            throw UserException.withDetails(
+                    "You do not have permission to create a category for this store",
+                    ExceptionMessages.ctx(
+                            "storeId", categoryDto.getStoreId(),
+                            "userId", userEntity.getId(),
+                            "role", userEntity.getRole()
+                    )
+            );
         }
 
         CategoryEntity categoryEntity = CategoryEntity.builder()
@@ -55,7 +77,7 @@ public class CategoryServiceImpl implements CategoryService
     public CategoryDto getCategoryById(Long id) throws Exception
     {
         CategoryEntity categoryEntity = categoryRepository.findById(id)
-                .orElseThrow(() -> new Exception("Category not found with id: " + id));
+                .orElseThrow(() -> ExceptionMessages.notFound("Category", id));
         return CategoryMapper.toDto(categoryEntity);
     }
 
@@ -68,8 +90,9 @@ public class CategoryServiceImpl implements CategoryService
     }
 
     @Override
-    public List<CategoryDto> getCategoriesByStore(Long storeId)
+    public List<CategoryDto> getCategoriesByStore(Long storeId) throws Exception
     {
+        storeAccessService.requireStoreAccess(storeId);
         List<CategoryEntity> categories = categoryRepository.findByStoreEntity_Id(storeId);
 
         return categories.stream()
@@ -81,7 +104,7 @@ public class CategoryServiceImpl implements CategoryService
     public CategoryDto updateCategory(Long id, CategoryDto categoryDto) throws Exception
     {
         CategoryEntity categoryEntity = categoryRepository.findById(id)
-                                                          .orElseThrow(() -> new Exception("Category not found with id: " + id + "; cannot update"));
+                .orElseThrow(() -> ExceptionMessages.notFound("Category", id, "update"));
 
         UserEntity userEntity = loadCurrentUser();
         categoryEntity.setName(categoryDto.getName());
@@ -89,9 +112,15 @@ public class CategoryServiceImpl implements CategoryService
         if(false == isAuthenticated(userEntity, categoryEntity.getStoreEntity()))
         {
             Long storeId = categoryEntity.getStoreEntity() != null ? categoryEntity.getStoreEntity().getId() : null;
-            throw new Exception("You do not have permission to update categoryId=" + id
-                    + " on storeId=" + storeId + " as userId=" + userEntity.getId()
-                    + " with role=" + userEntity.getRole());
+            throw UserException.withDetails(
+                    "You do not have permission to update this category",
+                    ExceptionMessages.ctx(
+                            "categoryId", id,
+                            "storeId", storeId,
+                            "userId", userEntity.getId(),
+                            "role", userEntity.getRole()
+                    )
+            );
         }
 
         return CategoryMapper.toDto(categoryRepository.save(categoryEntity));
@@ -101,15 +130,21 @@ public class CategoryServiceImpl implements CategoryService
     public void deleteCategory(Long id) throws Exception
     {
         CategoryEntity categoryEntity = categoryRepository.findById(id)
-                                                          .orElseThrow(() -> new Exception("Category not found with id: " + id + "; cannot delete"));
+                .orElseThrow(() -> ExceptionMessages.notFound("Category", id, "delete"));
 
         UserEntity userEntity = loadCurrentUser();
         if(false == isAuthenticated(userEntity, categoryEntity.getStoreEntity()))
         {
             Long storeId = categoryEntity.getStoreEntity() != null ? categoryEntity.getStoreEntity().getId() : null;
-            throw new Exception("You do not have permission to delete categoryId=" + id
-                    + " on storeId=" + storeId + " as userId=" + userEntity.getId()
-                    + " with role=" + userEntity.getRole());
+            throw UserException.withDetails(
+                    "You do not have permission to delete this category",
+                    ExceptionMessages.ctx(
+                            "categoryId", id,
+                            "storeId", storeId,
+                            "userId", userEntity.getId(),
+                            "role", userEntity.getRole()
+                    )
+            );
         }
 
         categoryRepository.delete(categoryEntity);
@@ -125,17 +160,24 @@ public class CategoryServiceImpl implements CategoryService
     {
         UserDto currentUser = userService.getCurrentUser();
         return userRepository.findById(currentUser.getId())
-                .orElseThrow(() -> new Exception("User not found with id: " + currentUser.getId()));
+                .orElseThrow(() -> ExceptionMessages.notFound("User", currentUser.getId()));
     }
 
     private boolean isAuthenticated(UserEntity userEntity, StoreEntity storeEntity) throws UserException
     {
+        if(storeEntity == null)
+        {
+            throw ExceptionMessages.required(
+                    "storeId",
+                    "Category has no linked store; cannot verify permissions"
+            );
+        }
+
         boolean isAdmin = userEntity.getRole() == UserRole.ADMIN;
 
         boolean isSameAdmin = storeEntity.getStoreAdmin() != null
                 && userEntity.getId().equals(storeEntity.getStoreAdmin().getId());
 
-        // Platform ADMIN or the store's own admin (OWNER creating their store) may manage categories
         return isAdmin || isSameAdmin;
     }
 }

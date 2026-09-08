@@ -15,8 +15,8 @@ import { ShiftReportSection } from '@/features/shift-reports/ShiftReportSection'
 import { BranchSection } from '@/features/stores/BranchSection'
 import { StoreSection } from '@/features/stores/StoreSection'
 import { useApiAction } from '@/hooks/useApiAction'
-import { ApiError } from '@/lib/api-client'
-import { getAuthToken } from '@/stores/auth-store'
+import { ApiError, apiClient } from '@/lib/api-client'
+import { clearAuthSession, getAuthToken } from '@/stores/auth-store'
 
 const SECTIONS = [
   'auth',
@@ -41,6 +41,7 @@ export function ApiPlaygroundPage() {
   const [token, setToken] = useState<string | null>(() => getAuthToken())
   const [active, setActive] = useState<SectionId>('auth')
   const [testRunning, setTestRunning] = useState(false)
+  const [clearRunning, setClearRunning] = useState(false)
 
   const safeRun = async <T,>(action: () => Promise<T>) => {
     try {
@@ -73,6 +74,32 @@ export function ApiPlaygroundPage() {
     }
   }
 
+  const handleClearDb = async () => {
+    if (
+      !window.confirm(
+        'Clear ALL database tables? This cannot be undone. Your JWT will also be removed.',
+      )
+    ) {
+      return
+    }
+
+    setClearRunning(true)
+    try {
+      await run(() =>
+        apiClient('/api/dev/clear-db', {
+          method: 'DELETE',
+          auth: true,
+        }),
+      )
+      clearAuthSession()
+      setToken(null)
+    } catch {
+      // error already captured by useApiAction
+    } finally {
+      setClearRunning(false)
+    }
+  }
+
   return (
     <div className="playground">
       <header className="playground-header">
@@ -84,11 +111,21 @@ export function ApiPlaygroundPage() {
           <button
             type="button"
             className="btn btn-test"
-            disabled={loading || testRunning}
+            disabled={loading || testRunning || clearRunning}
             onClick={handleFullTest}
-            title="Creates a full valid POS system: owner, store, catalog, inventory, cashier, shift, order, receipt, refund"
+            title="Seeds a full demo POS dataset: store, branches, catalog, inventory, customers, employees, shift, several orders/refunds, billing, reports"
+
           >
             {testRunning ? 'TEST running…' : 'TEST'}
+          </button>
+          <button
+            type="button"
+            className="btn btn-clear-db"
+            disabled={loading || testRunning || clearRunning}
+            onClick={handleClearDb}
+            title="Truncates every table in the MySQL database"
+          >
+            {clearRunning ? 'CLEAR DB…' : 'CLEAR DB'}
           </button>
           <div className={`token-pill ${token ? 'token-pill-on' : ''}`}>
             {token ? `JWT saved (${token.slice(0, 18)}…)` : 'No JWT — signup or login first'}
@@ -125,7 +162,7 @@ export function ApiPlaygroundPage() {
           {active === 'users' && <UserSection onRun={safeRun} />}
           {active === 'billing' && <BillingSection onRun={safeRun} />}
         </div>
-        <ResponsePanel loading={loading || testRunning} result={result} error={error} />
+        <ResponsePanel loading={loading || testRunning || clearRunning} result={result} error={error} />
       </div>
     </div>
   )

@@ -1,7 +1,11 @@
 package com.renko.configuration;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.env.Environment;
+import org.springframework.http.HttpMethod;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -12,43 +16,79 @@ import org.springframework.security.web.authentication.www.BasicAuthenticationFi
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.List;
 
 @Configuration
+@EnableMethodSecurity
 public class SecurityConfig
 {
+    private final Environment environment;
+    private final List<String> allowedOrigins;
+
+    public SecurityConfig(
+            Environment environment,
+            @Value("${app.cors.allowed-origins:http://localhost:8080,http://localhost:5173}") String origins)
+    {
+        this.environment = environment;
+        this.allowedOrigins = Arrays.stream(origins.split(","))
+                .map(String::trim)
+                .filter(s -> false == s.isBlank())
+                .toList();
+    }
+
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception
     {
+        boolean isDev = Arrays.asList(environment.getActiveProfiles()).contains("dev");
+
         return http
-                // Use JWT authentication, so do not create or store HTTP sessions
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
-                // Define which endpoints require authentication or specific roles
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/super-admin/**")
-                        .hasRole("ADMIN")
+                .authorizeHttpRequests(auth ->
+                {
+                    auth.requestMatchers("/auth/**").permitAll();
+                    auth.requestMatchers("/actuator/health").permitAll();
+                    auth.requestMatchers("/api/billing/webhooks/stripe").permitAll();
 
-                        .requestMatchers("/api/**")
-                        .authenticated()
+                    if(isDev)
+                    {
+                        auth.requestMatchers("/api/dev/reset-demo", "/api/dev/demo-info").permitAll();
+                        auth.requestMatchers("/api/dev/**").hasAnyRole("ADMIN", "OWNER");
+                    }
+                    else
+                    {
+                        auth.requestMatchers("/api/dev/**").denyAll();
+                    }
 
-                        .anyRequest()
-                        .permitAll()
-                )
-                // Validate JWT tokens before Spring's authentication filters run
+                    auth.requestMatchers("/api/super-admin/**").hasRole("ADMIN");
+
+                    auth.requestMatchers(HttpMethod.POST, "/api/orders").hasAnyRole(
+                            "CASHIER", "OWNER", "STORE_MANAGER", "BRANCH_MANAGER", "ADMIN");
+                    auth.requestMatchers("/api/reports/**").hasAnyRole(
+                            "OWNER", "STORE_MANAGER", "BRANCH_MANAGER", "ADMIN");
+                    auth.requestMatchers(HttpMethod.POST, "/api/employees/**").hasAnyRole(
+                            "OWNER", "STORE_MANAGER", "ADMIN");
+                    auth.requestMatchers(HttpMethod.POST, "/api/products/**", "/api/categories/**",
+                                    "/api/inventories/**")
+                            .hasAnyRole("OWNER", "STORE_MANAGER", "BRANCH_MANAGER", "ADMIN");
+
+                    auth.requestMatchers(HttpMethod.DELETE, "/api/stores", "/api/users",
+                                    "/api/orders", "/api/products", "/api/categories", "/api/customers",
+                                    "/api/branches", "/api/inventories", "/api/refunds", "/api/employees",
+                                    "/api/shift-report")
+                            .hasAnyRole("ADMIN", "OWNER");
+
+                    auth.requestMatchers("/api/**").authenticated();
+                    auth.anyRequest().permitAll();
+                })
                 .addFilterBefore(
                         new JwtValidator(),
                         BasicAuthenticationFilter.class
                 )
-                // Disable CSRF because this REST API uses JWT instead of sessions
                 .csrf(AbstractHttpConfigurer::disable)
-                // Apply the cors rules
-                .cors(cors -> cors
-                        .configurationSource(corsConfigurationSource())
-                )
-                // Build and return the configured security filter chain
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .build();
     }
 
@@ -58,29 +98,24 @@ public class SecurityConfig
         return new BCryptPasswordEncoder();
     }
 
-    // Configure which frontend origins are allowed to access this REST API.
     @Bean
     public CorsConfigurationSource corsConfigurationSource()
     {
         return request ->
         {
             CorsConfiguration config = new CorsConfiguration();
-            // Allow requests only from the specified frontend application
-            config.setAllowedOrigins(List.of(
-                    "http://localhost:8080",
-                    "http://localhost:5173"
-            ));
-            // Allow all HTTP methods (GET, POST, PUT, DELETE)
-            config.setAllowedMethods(Collections.singletonList("*"));
-            // Allow cookies or authentication credentials to be included
+            // Use patterns only — browsers treat localhost and 127.0.0.1 as different origins,
+            // and Spring returns 403 when the Origin is not allowed.
+            java.util.ArrayList<String> patterns = new java.util.ArrayList<>();
+            patterns.add("http://localhost:*");
+            patterns.add("http://127.0.0.1:*");
+            patterns.addAll(allowedOrigins);
+            config.setAllowedOriginPatterns(patterns);
+            config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"));
             config.setAllowCredentials(true);
-            // Accept all request headers
-            config.setAllowedHeaders(Collections.singletonList("*"));
-            // Expose the Authorization header so the frontend can read it
+            config.setAllowedHeaders(List.of("*"));
             config.setExposedHeaders(List.of("Authorization"));
-            // Cache the cors preflight response for one hour
             config.setMaxAge(3600L);
-
             return config;
         };
     }

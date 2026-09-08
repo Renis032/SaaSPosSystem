@@ -18,7 +18,7 @@ public interface OrderService
                                     Long customerId,
                                     Long cashierId,
                                     PaymentType paymentType,
-                                    OrderStatus orderStatus);
+                                    OrderStatus orderStatus) throws Exception;
 
     List<OrderDto> getOrdersByCashier(Long cashierId);
 
@@ -27,9 +27,9 @@ public interface OrderService
 
     List<OrderDto> getOrdersByCustomerId(Long customerId);
 
-    List<OrderDto> getTodayOrdersByStore(Long storeId);
+    List<OrderDto> getTodayOrdersByStore(Long storeId) throws Exception;
 
-    List<OrderDto> getTop5RecentOrdersByStoreId(Long storeId);
+    List<OrderDto> getTop5RecentOrdersByStoreId(Long storeId) throws Exception;
 
     ReceiptDto getReceipt(Long orderId);
 }

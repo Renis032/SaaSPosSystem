@@ -19,7 +19,7 @@ public interface RefundService
                                                    LocalDateTime start,
                                                    LocalDateTime end);
 
-    List<RefundDto> getRefundsByStore(Long storeId);
+    List<RefundDto> getRefundsByStore(Long storeId) throws Exception;
 
     RefundDto getRefundById(Long refundId) throws Exception;
 

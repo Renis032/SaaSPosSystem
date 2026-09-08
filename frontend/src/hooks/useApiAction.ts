@@ -16,12 +16,12 @@ export function useApiAction() {
     } catch (err) {
       const message =
         err instanceof ApiError
-          ? `${err.message}${err.body ? `\n${JSON.stringify(err.body, null, 2)}` : ''}`
+          ? err.message
           : err instanceof Error
             ? err.message
             : 'Unknown error'
       setError(message)
-      setResult(null)
+      setResult(err instanceof ApiError && err.body !== undefined ? err.body : null)
       throw err
     } finally {
       setLoading(false)

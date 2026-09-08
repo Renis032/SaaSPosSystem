@@ -1,14 +1,16 @@
 import { useState } from 'react'
 import { Field } from '@/components/ui/Field'
+import { PhoneInput } from '@/components/ui/PhoneInput'
 import { ActionRow, Section } from '@/components/ui/Section'
 import { apiClient } from '@/lib/api-client'
-import { toOptions, USER_ROLES } from '@/lib/enums'
-import { clearAuthToken, getAuthToken, setAuthToken } from '@/stores/auth-store'
+import { DEFAULT_COUNTRY_DIAL, formatInternationalPhone } from '@/lib/country-codes'
+import { clearAuthSession, getAuthToken, setAuthSession } from '@/stores/auth-store'
+import type { AuthUser } from '@/types/models'
 
 type AuthPayload = {
   jwt?: string
   message?: string
-  user?: unknown
+  user?: AuthUser
 }
 
 type AuthSectionProps = {
@@ -21,14 +23,24 @@ export function AuthSection({ onRun, onTokenChange }: AuthSectionProps) {
     fullName: '',
     email: '',
     password: '',
-    phoneNumber: '',
+    phoneDigits: '',
     role: 'OWNER',
   })
+  const [countryDial, setCountryDial] = useState(DEFAULT_COUNTRY_DIAL)
   const [login, setLogin] = useState({ email: '', password: '' })
 
   function handleAuthSuccess(data: AuthPayload) {
     if (data.jwt) {
-      setAuthToken(data.jwt)
+      const user = data.user
+        ? {
+            id: Number(data.user.id),
+            email: String(data.user.email ?? ''),
+            fullName: String(data.user.fullName ?? ''),
+            role: String(data.user.role ?? ''),
+            storeId: data.user.storeId ?? null,
+          }
+        : null
+      setAuthSession(data.jwt, user)
       onTokenChange(data.jwt)
     }
     return data
@@ -38,15 +50,35 @@ export function AuthSection({ onRun, onTokenChange }: AuthSectionProps) {
     <Section title="Auth" description="Signup / login. JWT is saved and sent on later /api calls.">
       <ActionRow title="Signup">
         <div className="form-grid">
-          <Field label="Full name" value={signup.fullName} onChange={(e) => setSignup({ ...signup, fullName: e.target.value })} />
-          <Field label="Email" type="email" value={signup.email} onChange={(e) => setSignup({ ...signup, email: e.target.value })} />
-          <Field label="Password" type="password" value={signup.password} onChange={(e) => setSignup({ ...signup, password: e.target.value })} />
-          <Field label="Phone" value={signup.phoneNumber} onChange={(e) => setSignup({ ...signup, phoneNumber: e.target.value })} />
+          <Field
+            label="Full name"
+            value={signup.fullName}
+            onChange={(e) => setSignup({ ...signup, fullName: e.target.value })}
+          />
+          <Field
+            label="Email"
+            type="email"
+            value={signup.email}
+            onChange={(e) => setSignup({ ...signup, email: e.target.value })}
+          />
+          <Field
+            label="Password"
+            type="password"
+            value={signup.password}
+            onChange={(e) => setSignup({ ...signup, password: e.target.value })}
+          />
+          <PhoneInput
+            countryDial={countryDial}
+            phoneDigits={signup.phoneDigits}
+            onCountryDialChange={setCountryDial}
+            onPhoneDigitsChange={(phoneDigits) => setSignup({ ...signup, phoneDigits })}
+            required
+          />
           <Field
             as="select"
             label="Role"
             value={signup.role}
-            options={toOptions(USER_ROLES)}
+            options={[{ value: 'OWNER', label: 'OWNER' }]}
             onChange={(e) => setSignup({ ...signup, role: e.target.value })}
           />
         </div>
@@ -55,9 +87,17 @@ export function AuthSection({ onRun, onTokenChange }: AuthSectionProps) {
           className="btn"
           onClick={() =>
             onRun(() =>
-              apiClient<AuthPayload>('/auth/signup', { method: 'POST', body: signup, auth: false }).then(
-                handleAuthSuccess,
-              ),
+              apiClient<AuthPayload>('/auth/signup', {
+                method: 'POST',
+                body: {
+                  fullName: signup.fullName,
+                  email: signup.email,
+                  password: signup.password,
+                  phoneNumber: formatInternationalPhone(countryDial, signup.phoneDigits),
+                  role: signup.role,
+                },
+                auth: false,
+              }).then(handleAuthSuccess),
             )
           }
         >
@@ -67,8 +107,18 @@ export function AuthSection({ onRun, onTokenChange }: AuthSectionProps) {
 
       <ActionRow title="Login">
         <div className="form-grid">
-          <Field label="Email" type="email" value={login.email} onChange={(e) => setLogin({ ...login, email: e.target.value })} />
-          <Field label="Password" type="password" value={login.password} onChange={(e) => setLogin({ ...login, password: e.target.value })} />
+          <Field
+            label="Email"
+            type="email"
+            value={login.email}
+            onChange={(e) => setLogin({ ...login, email: e.target.value })}
+          />
+          <Field
+            label="Password"
+            type="password"
+            value={login.password}
+            onChange={(e) => setLogin({ ...login, password: e.target.value })}
+          />
         </div>
         <button
           type="button"
@@ -87,7 +137,7 @@ export function AuthSection({ onRun, onTokenChange }: AuthSectionProps) {
           type="button"
           className="btn btn-secondary"
           onClick={() => {
-            clearAuthToken()
+            clearAuthSession()
             onTokenChange(null)
           }}
         >

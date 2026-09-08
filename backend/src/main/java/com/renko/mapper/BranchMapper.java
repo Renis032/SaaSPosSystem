@@ -4,6 +4,8 @@ import com.renko.entities.BranchEntity;
 import com.renko.entities.StoreEntity;
 import com.renko.payload.dto.BranchDto;
 
+import java.util.ArrayList;
+
 public class BranchMapper
 {
     public static BranchDto toDto(BranchEntity branchEntity)
@@ -14,7 +16,9 @@ public class BranchMapper
                         .address(branchEntity.getAddress())
                         .phone(branchEntity.getPhone())
                         .email(branchEntity.getEmail())
-                        .workdays(branchEntity.getWorkdays())
+                        .workdays(branchEntity.getWorkdays() != null
+                                          ? new ArrayList<>(branchEntity.getWorkdays())
+                                          : null)
                         .openTime(branchEntity.getOpenTime())
                         .closeTime(branchEntity.getCloseTime())
                         .createdAt(branchEntity.getCreatedAt())

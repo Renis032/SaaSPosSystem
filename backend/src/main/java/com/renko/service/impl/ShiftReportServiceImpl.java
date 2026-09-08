@@ -2,6 +2,7 @@ package com.renko.service.impl;
 
 import com.renko.domain.PaymentType;
 import com.renko.entities.*;
+import com.renko.exceptions.ExceptionMessages;
 import com.renko.exceptions.UserException;
 import com.renko.mapper.ShiftReportMapper;
 import com.renko.payload.dto.ShiftReportDto;
@@ -12,6 +13,7 @@ import com.renko.repository.ShiftReportRepository;
 import com.renko.repository.StoreRepository;
 import com.renko.repository.UserRepository;
 import com.renko.service.ShiftReportService;
+import com.renko.service.StoreAccessService;
 import com.renko.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -32,6 +34,7 @@ public class ShiftReportServiceImpl implements ShiftReportService
     private final StoreRepository storeRepository;
     private final UserService userService;
     private final UserRepository userRepository;
+    private final StoreAccessService storeAccessService;
 
 @Override
     public ShiftReportDto startShift() throws Exception
@@ -52,15 +55,20 @@ public class ShiftReportServiceImpl implements ShiftReportService
 
         if(currentUser.getStoreId() == null)
         {
-            throw new Exception("Cashier has no storeId; cannot start shift. userId="
-                    + currentUser.getId() + ", email=" + currentUser.getEmail());
+            throw ExceptionMessages.required(
+                    "storeId",
+                    "Cashier has no storeId; cannot start shift. Create/assign a store first."
+            );
         }
 
         UserEntity cashierEntity = userRepository.findById(currentUser.getId())
-                .orElseThrow(() -> new Exception("Cashier not found with id: " + currentUser.getId()));
+                .orElseThrow(() -> ExceptionMessages.notFound("Cashier", currentUser.getId(), "start shift"));
         StoreEntity store = storeRepository.findById(currentUser.getStoreId())
-                .orElseThrow(() -> new Exception("Store not found with id: " + currentUser.getStoreId()
-                        + "; cannot start shift for cashierId=" + currentUser.getId()));
+                .orElseThrow(() -> ExceptionMessages.notFound(
+                        "Store",
+                        currentUser.getStoreId(),
+                        "start shift for cashierId=" + currentUser.getId()
+                ));
 
         ShiftReportEntity shiftReport = ShiftReportEntity.builder()
                 .shiftStart(shiftStart)
@@ -82,9 +90,11 @@ public class ShiftReportServiceImpl implements ShiftReportService
 
         ShiftReportEntity shiftReport = shiftReportRepository
                 .findTopByCashierEntity_IdAndShiftEndIsNullOrderByShiftStartDesc(cashier.getId())
-                .orElseThrow(() -> new Exception("No active shift found for cashierId=" + cashier.getId()
-                        + ", email=" + cashier.getEmail()
-                        + (shiftReportId != null ? ", requestedShiftReportId=" + shiftReportId : "")));
+                .orElseThrow(() -> ExceptionMessages.notFound(
+                        "Active shift",
+                        cashier.getId(),
+                        "end shift" + (shiftReportId != null ? " (requestedShiftReportId=" + shiftReportId + ")" : "")
+                ));
 
         shiftReport.setShiftEnd(shiftEnd);
 
@@ -123,7 +133,7 @@ public class ShiftReportServiceImpl implements ShiftReportService
     {
         return shiftReportRepository.findById(id)
                 .map(ShiftReportMapper::toDto)
-                .orElseThrow(() -> new Exception("Shift report not found with id: " + id));
+                .orElseThrow(() -> ExceptionMessages.notFound("Shift report", id));
     }
 
     @Override
@@ -135,8 +145,9 @@ public class ShiftReportServiceImpl implements ShiftReportService
     }
 
     @Override
-    public List<ShiftReportDto> getShiftReportsByStoreId(Long storeId)
+    public List<ShiftReportDto> getShiftReportsByStoreId(Long storeId) throws Exception
     {
+        storeAccessService.requireStoreAccess(storeId);
         return shiftReportRepository.findByStoreEntity_Id(storeId).stream()
                 .map(ShiftReportMapper::toDto)
                 .collect(Collectors.toList());
@@ -197,15 +208,21 @@ public class ShiftReportServiceImpl implements ShiftReportService
     public ShiftReportDto getShiftByCashierEntityAndDate(Long cashierId, LocalDateTime date) throws Exception
     {
         UserEntity cashier = userRepository.findById(cashierId)
-                .orElseThrow(() -> new Exception("Cashier not found with id: " + cashierId
-                        + "; cannot lookup shift for date=" + date));
+                .orElseThrow(() -> ExceptionMessages.notFound(
+                        "Cashier",
+                        cashierId,
+                        "lookup shift for date=" + date
+                ));
 
         LocalDateTime start = date.withHour(0).withMinute(0).withSecond(0);
         LocalDateTime end = date.withHour(23).withMinute(59).withSecond(59);
 
         ShiftReportEntity report = shiftReportRepository.findByCashierEntityAndShiftStartBetween(cashier, start, end)
-                .orElseThrow(() -> new Exception("No shift found for cashierId=" + cashierId
-                        + " between " + start + " and " + end));
+                .orElseThrow(() -> ExceptionMessages.notFoundBy(
+                        "Shift report",
+                        "cashierId/date",
+                        cashierId + " @ " + date
+                ));
 
         return ShiftReportMapper.toDto(report);
     }
@@ -214,7 +231,7 @@ public class ShiftReportServiceImpl implements ShiftReportService
     public void deleteShiftReport(Long id) throws Exception
     {
         ShiftReportEntity report = shiftReportRepository.findById(id)
-                .orElseThrow(() -> new Exception("Shift report not found with id: " + id + "; cannot delete"));
+                .orElseThrow(() -> ExceptionMessages.notFound("Shift report", id, "delete"));
         shiftReportRepository.delete(report);
     }
 

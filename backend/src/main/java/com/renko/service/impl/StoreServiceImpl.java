@@ -1,6 +1,8 @@
 package com.renko.service.impl;
 
 import com.renko.domain.StoreStatus;
+import com.renko.domain.SubscriptionPlan;
+import com.renko.exceptions.ExceptionMessages;
 import com.renko.exceptions.UserException;
 import com.renko.mapper.StoreMapper;
 import com.renko.entities.StoreContactEntity;
@@ -10,7 +12,9 @@ import com.renko.payload.dto.StoreDto;
 import com.renko.payload.dto.UserDto;
 import com.renko.repository.StoreRepository;
 import com.renko.repository.UserRepository;
+import com.renko.service.StoreAccessService;
 import com.renko.service.StoreService;
+import com.renko.service.SubscriptionService;
 import com.renko.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -25,6 +29,8 @@ public class StoreServiceImpl implements StoreService
     private final StoreRepository storeRepository;
     private final UserRepository userRepository;
     private final UserService userService;
+    private final SubscriptionService subscriptionService;
+    private final StoreAccessService storeAccessService;
 
     @Override
     public StoreDto createStore(StoreDto storeDto, UserEntity userEntity)
@@ -41,15 +47,18 @@ public class StoreServiceImpl implements StoreService
         storeAdmin.setStoreEntity(savedStoreEntity);
         userRepository.save(storeAdmin);
 
+        subscriptionService.createTrialForNewStore(savedStoreEntity, SubscriptionPlan.STARTER);
+
         return StoreMapper.toDto(savedStoreEntity);
     }
 
     @Override
     public StoreDto getStoreById(Long id) throws Exception
     {
+        storeAccessService.requireStoreAccess(id);
         StoreEntity storeEntity = storeRepository.findById(id)
                                                  .orElseThrow(
-                                                 () -> new Exception("Store not found with id: " + id));
+                                                 () -> ExceptionMessages.notFound("Store", id));
 
         return StoreMapper.toDto(storeEntity);
     }
@@ -109,6 +118,7 @@ public class StoreServiceImpl implements StoreService
     @Override
     public void deleteStore(Long id) throws UserException
     {
+        storeAccessService.requireStoreAccess(id);
         StoreEntity storeEntity = storeRepository.findById(id)
                                                  .orElseThrow(() -> new UserException(
                                                          "Store not found with id: " + id,
@@ -139,9 +149,10 @@ public class StoreServiceImpl implements StoreService
         }
 
         StoreEntity storeEntity = storeRepository.findById(currentUser.getStoreId())
-                                                 .orElseThrow(() -> new Exception(
-                                                         "Store not found with id: " + currentUser.getStoreId()
-                                                         + " for employee userId=" + currentUser.getId()
+                                                 .orElseThrow(() -> ExceptionMessages.notFound(
+                                                         "Store",
+                                                         currentUser.getStoreId(),
+                                                         "load employee store for userId=" + currentUser.getId()
                                                  ));
 
         return StoreMapper.toDto(storeEntity);
@@ -151,9 +162,10 @@ public class StoreServiceImpl implements StoreService
     public StoreDto moderateStore(Long id, StoreStatus storeStatus) throws Exception
     {
         StoreEntity storeEntity = storeRepository.findById(id)
-                                                 .orElseThrow(() -> new Exception(
-                                                         "Store not found with id: " + id
-                                                         + "; cannot set status to " + storeStatus
+                                                 .orElseThrow(() -> ExceptionMessages.notFound(
+                                                         "Store",
+                                                         id,
+                                                         "set status to " + storeStatus
                                                  ));
 
         storeEntity.setStatus(storeStatus);

@@ -19,9 +19,34 @@ public final class ExceptionMessages
         return new EntityNotFoundException(resource + " not found with id: " + id);
     }
 
-    public static EntityNotFoundException notFound(String resource, String field, Object value)
+    public static EntityNotFoundException notFound(String resource, Object id, String action)
+    {
+        return new EntityNotFoundException(resource + " not found with id: " + id + "; cannot " + action);
+    }
+
+    public static EntityNotFoundException notFoundBy(String resource, String field, Object value)
     {
         return new EntityNotFoundException(resource + " not found with " + field + ": " + value);
+    }
+
+    public static UserException required(String field)
+    {
+        return UserException.withDetail(field + " is required", field, null);
+    }
+
+    public static UserException required(String field, String message)
+    {
+        return UserException.withDetail(message, field, null);
+    }
+
+    public static UserException mismatch(String message, Map<String, Object> details)
+    {
+        return UserException.withDetails(message, details);
+    }
+
+    public static UserException mismatch(String message, Object... keyValues)
+    {
+        return UserException.withDetails(message, ctx(keyValues));
     }
 
     public static Exception invalid(String message, String field, Object value)

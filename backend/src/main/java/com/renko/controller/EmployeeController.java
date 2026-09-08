@@ -8,6 +8,7 @@ import com.renko.payload.response.ApiResponse;
 import com.renko.service.EmployeeService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -20,6 +21,7 @@ public class EmployeeController
     private final EmployeeService employeeService;
 
     @PostMapping("/store/{storeId}")
+    @PreAuthorize("hasAnyRole('OWNER','STORE_MANAGER','ADMIN')")
     public ResponseEntity<UserDto> createEmployee(@PathVariable Long storeId,
                                                   @RequestBody CreateEmployeeDto createEmployeeDto) throws Exception
     {

@@ -25,7 +25,7 @@ public class OrderMapper
                 : orderEntity.getItems()
                         .stream()
                         .filter(Objects::nonNull)
-                        .map(OrderItemMapper::toDto)
+                        .map(item -> OrderItemMapper.toDto(item, orderEntity.getId()))
                         .collect(Collectors.toList());
 
         return OrderDto.builder()

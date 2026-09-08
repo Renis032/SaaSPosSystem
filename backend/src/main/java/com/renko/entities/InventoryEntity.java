@@ -35,6 +35,10 @@ public class InventoryEntity
     @Column(nullable = false)
     private Integer lowStockThreshold = 10;
 
+    @Version
+    @Column(nullable = false)
+    private Long version = 0L;
+
     private LocalDateTime lastUpdated;
 
     @PrePersist

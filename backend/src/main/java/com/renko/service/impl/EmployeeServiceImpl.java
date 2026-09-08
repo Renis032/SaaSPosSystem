@@ -7,6 +7,7 @@ import com.renko.entities.RefundEntity;
 import com.renko.entities.ShiftReportEntity;
 import com.renko.entities.StoreEntity;
 import com.renko.entities.UserEntity;
+import com.renko.exceptions.ExceptionMessages;
 import com.renko.mapper.UserMapper;
 import com.renko.payload.dto.CreateEmployeeDto;
 import com.renko.payload.dto.UserDto;
@@ -18,6 +19,8 @@ import com.renko.repository.ShiftReportRepository;
 import com.renko.repository.StoreRepository;
 import com.renko.repository.UserRepository;
 import com.renko.service.EmployeeService;
+import com.renko.service.AuditLogService;
+import com.renko.service.StoreAccessService;
 import com.renko.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -39,13 +42,28 @@ public class EmployeeServiceImpl implements EmployeeService
     private final RefundRepository refundRepository;
     private final ShiftReportRepository shiftReportRepository;
     private final BranchRepository branchRepository;
+    private final StoreAccessService storeAccessService;
+    private final AuditLogService auditLogService;
 
     @Override
     public UserDto createStoreEmployee(CreateEmployeeDto employee, Long storeId) throws Exception
     {
+        if(storeId == null)
+        {
+            throw ExceptionMessages.required(
+                    "storeId",
+                    "storeId is required to create an employee. Create a store first."
+            );
+        }
+
+        storeAccessService.requireStoreAccess(storeId);
+
         StoreEntity storeEntity = storeRepository.findById(storeId)
-                                                 .orElseThrow(() -> new Exception("Store not found with id: " + storeId
-                                                         + "; cannot create employee email=" + employee.getEmail()));
+                .orElseThrow(() -> ExceptionMessages.notFound(
+                        "Store",
+                        storeId,
+                        "create employee email=" + employee.getEmail()
+                ));
 
         UserEntity userEntity = new UserEntity();
         userEntity.setEmail(employee.getEmail());
@@ -56,6 +74,13 @@ public class EmployeeServiceImpl implements EmployeeService
         userEntity.setPassword(passwordEncoder.encode(employee.getPassword()));
 
         UserEntity savedUser = userRepository.save(userEntity);
+        auditLogService.record(
+                storeId,
+                "EMPLOYEE_CREATE",
+                "User",
+                String.valueOf(savedUser.getId()),
+                "role=" + savedUser.getRole() + "; email=" + savedUser.getEmail()
+        );
 
         return UserMapper.toDto(savedUser);
     }
@@ -64,7 +89,7 @@ public class EmployeeServiceImpl implements EmployeeService
     public UserDto getEmployeeById(Long employeeId) throws Exception
     {
         UserEntity employee = userRepository.findById(employeeId)
-                .orElseThrow(() -> new Exception("Employee not found with id: " + employeeId));
+                .orElseThrow(() -> ExceptionMessages.notFound("Employee", employeeId));
         return UserMapper.toDto(employee);
     }
 
@@ -81,21 +106,23 @@ public class EmployeeServiceImpl implements EmployeeService
     public UserDto updateStoreEmployee(Long employeeId, UserUpdateDto employeeDto) throws Exception
     {
         UserEntity existingEmployee = userRepository.findById(employeeId)
-                                                    .orElseThrow(() -> new Exception("Employee not found with id: " + employeeId + "; cannot update"));
+                .orElseThrow(() -> ExceptionMessages.notFound("Employee", employeeId, "update"));
 
         existingEmployee.updateFrom(employeeDto);
-        // Update password only if non-empty
         if(employeeDto.getPassword() != null && false == employeeDto.getPassword().isBlank())
         {
             existingEmployee.setPassword(passwordEncoder.encode(employeeDto.getPassword()));
         }
 
-        // Update store if provided
         if(employeeDto.getStoreId() != null)
         {
+            storeAccessService.requireStoreAccess(employeeDto.getStoreId());
             StoreEntity storeEntity = storeRepository.findById(employeeDto.getStoreId())
-                                                     .orElseThrow(() -> new Exception("Store not found with id: " + employeeDto.getStoreId()
-                                                             + "; cannot reassign employeeId=" + employeeId));
+                    .orElseThrow(() -> ExceptionMessages.notFound(
+                            "Store",
+                            employeeDto.getStoreId(),
+                            "reassign employeeId=" + employeeId
+                    ));
 
             existingEmployee.setStoreEntity(storeEntity);
         }
@@ -160,10 +187,13 @@ public class EmployeeServiceImpl implements EmployeeService
     @Override
     public List<UserDto> findStoreEmployeesByRole(Long storeId, UserRole role) throws Exception
     {
+        storeAccessService.requireStoreAccess(storeId);
         StoreEntity storeEntity = storeRepository.findById(storeId)
-                                                 .orElseThrow(() -> new Exception("Store not found with id: " + storeId
-                                                         + "; cannot list employees"
-                                                         + (role != null ? " for role=" + role : "")));
+                                                 .orElseThrow(() -> ExceptionMessages.notFound(
+                                                         "Store",
+                                                         storeId,
+                                                         "list employees" + (role != null ? " for role=" + role : "")
+                                                 ));
 
         return userRepository.findByStoreEntity(storeEntity)
                              .stream()

@@ -7,6 +7,12 @@ public class OrderItemMapper
 {
     public static OrderItemDto toDto(OrderItemEntity orderItemEntity)
     {
+        Long orderId = orderItemEntity.getOrderEntity() != null ? orderItemEntity.getOrderEntity().getId() : null;
+        return toDto(orderItemEntity, orderId);
+    }
+
+    public static OrderItemDto toDto(OrderItemEntity orderItemEntity, Long orderId)
+    {
         return OrderItemDto.builder()
                 .id(orderItemEntity.getId())
                 .quantity(orderItemEntity.getQuantity())
@@ -14,7 +20,7 @@ public class OrderItemMapper
                 .originalPrice(orderItemEntity.getOriginalPrice())
                 .discountApplied(orderItemEntity.getDiscountApplied())
                 .productId(orderItemEntity.getProductEntity() != null ? orderItemEntity.getProductEntity().getId() : null)
-                .orderId(orderItemEntity.getOrderEntity() != null ? orderItemEntity.getOrderEntity().getId() : null)
+                .orderId(orderId)
                 .build();
     }
 }

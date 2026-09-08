@@ -17,7 +17,7 @@ public interface ShiftReportService
 
     List<ShiftReportDto> getAllShiftReports();
 
-    List<ShiftReportDto> getShiftReportsByStoreId(Long storeId);
+    List<ShiftReportDto> getShiftReportsByStoreId(Long storeId) throws Exception;
 
     List<ShiftReportDto> getShiftReportsByCashierEntity_Id(Long cashierId);
 

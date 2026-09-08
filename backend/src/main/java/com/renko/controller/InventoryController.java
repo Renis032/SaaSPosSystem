@@ -6,6 +6,7 @@ import com.renko.payload.response.ApiResponse;
 import com.renko.service.InventoryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -43,13 +44,9 @@ public class InventoryController
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<ApiResponse> delete(@PathVariable Long id)
+    public ResponseEntity<ApiResponse> delete(@PathVariable Long id) throws Exception
     {
-        inventoryService.deleteInventory(id);
-
-        ApiResponse apiResponse = new ApiResponse();
-        apiResponse.setMessage("Inventory deleted successfully");
-        return ResponseEntity.ok(apiResponse);
+        return ResponseEntity.ok(inventoryService.deleteInventory(id));
     }
 
     @DeleteMapping
@@ -63,20 +60,20 @@ public class InventoryController
     }
 
     @GetMapping("/store/{storeId}")
-    public ResponseEntity<List<InventoryDto>> getInventoryByStoreId(@PathVariable Long storeId)
+    public ResponseEntity<List<InventoryDto>> getInventoryByStoreId(@PathVariable Long storeId) throws Exception
     {
         return ResponseEntity.ok(inventoryService.getInventoryByStoreId(storeId));
     }
 
     @GetMapping("/store/{storeId}/product/{productId}")
     public ResponseEntity<InventoryDto> getInventoryByStoreIdAndProductId(@PathVariable Long storeId,
-                                                                          @PathVariable Long productId)
+                                                                          @PathVariable Long productId) throws Exception
     {
         return ResponseEntity.ok(inventoryService.getInventoryByStoreIdAndProductId(storeId, productId));
     }
 
     @GetMapping("/store/{storeId}/low-stock")
-    public ResponseEntity<List<InventoryDto>> getLowStockInventory(@PathVariable Long storeId)
+    public ResponseEntity<List<InventoryDto>> getLowStockInventory(@PathVariable Long storeId) throws Exception
     {
         return ResponseEntity.ok(inventoryService.getLowStockByStoreId(storeId));
     }
@@ -89,9 +86,19 @@ public class InventoryController
     }
 
     @PostMapping("/{id}/add-stock")
+    @PreAuthorize("hasAnyRole('OWNER','STORE_MANAGER','BRANCH_MANAGER','ADMIN')")
     public ResponseEntity<InventoryDto> addStock(@PathVariable Long id,
                                                  @RequestParam Integer quantity) throws Exception
     {
         return ResponseEntity.ok(inventoryService.addStock(id, quantity));
+    }
+
+    @PostMapping("/{id}/adjust")
+    @PreAuthorize("hasAnyRole('OWNER','STORE_MANAGER','BRANCH_MANAGER','ADMIN')")
+    public ResponseEntity<InventoryDto> adjustStock(@PathVariable Long id,
+                                                    @RequestParam Integer delta,
+                                                    @RequestParam(required = false) String reason) throws Exception
+    {
+        return ResponseEntity.ok(inventoryService.adjustStock(id, delta, reason));
     }
 }

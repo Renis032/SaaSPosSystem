@@ -6,12 +6,12 @@ import java.util.List;
 
 public interface CustomerService
 {
-    CustomerEntity createCustomer(CustomerEntity customerEntity);
+    CustomerEntity createCustomer(CustomerEntity customerEntity) throws Exception;
     CustomerEntity updateCustomer(Long id, CustomerEntity customerEntity) throws Exception;
     void deleteCustomer(Long id) throws Exception;
     CustomerEntity getCustomer(Long id) throws Exception;
     List<CustomerEntity> getAllCustomers();
-    List<CustomerEntity> getCustomersByStoreEntity_Id(Long id);
+    List<CustomerEntity> getCustomersByStoreEntity_Id(Long id) throws Exception;
     List<CustomerEntity> searchCustomer(String keyword);
     void deleteAllCustomers();
 }

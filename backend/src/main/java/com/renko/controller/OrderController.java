@@ -42,7 +42,7 @@ public class OrderController
                                                            @RequestParam(required = false) Long customerId,
                                                            @RequestParam(required = false) Long cashierId,
                                                            @RequestParam(required = false) PaymentType paymentType,
-                                                           @RequestParam(required = false) OrderStatus orderStatus)
+                                                           @RequestParam(required = false) OrderStatus orderStatus) throws Exception
     {
         return ResponseEntity.ok(orderService.getOrdersByStore(storeId, customerId, cashierId, paymentType, orderStatus));
     }
@@ -54,13 +54,13 @@ public class OrderController
     }
 
     @GetMapping("/today/store/{storeId}")
-    public ResponseEntity<List<OrderDto>> getTodayOrdersByStore(@PathVariable Long storeId)
+    public ResponseEntity<List<OrderDto>> getTodayOrdersByStore(@PathVariable Long storeId) throws Exception
     {
         return ResponseEntity.ok(orderService.getTodayOrdersByStore(storeId));
     }
 
     @GetMapping("/recent/store/{storeId}")
-    public ResponseEntity<List<OrderDto>> getRecentOrders(@PathVariable Long storeId)
+    public ResponseEntity<List<OrderDto>> getRecentOrders(@PathVariable Long storeId) throws Exception
     {
         return ResponseEntity.ok(orderService.getTop5RecentOrdersByStoreId(storeId));
     }

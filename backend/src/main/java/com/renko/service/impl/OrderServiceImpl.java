@@ -3,6 +3,8 @@ package com.renko.service.impl;
 import com.renko.domain.OrderStatus;
 import com.renko.domain.PaymentType;
 import com.renko.entities.*;
+import com.renko.exceptions.ExceptionMessages;
+import com.renko.exceptions.UserException;
 import com.renko.mapper.OrderMapper;
 import com.renko.payload.dto.*;
 import com.renko.repository.InventoryRepository;
@@ -11,7 +13,6 @@ import com.renko.repository.ProductRepository;
 import com.renko.repository.StoreRepository;
 import com.renko.repository.UserRepository;
 import com.renko.service.*;
-import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,6 +24,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class OrderServiceImpl implements OrderService
 {
     private final OrderRepository orderRepository;
@@ -33,6 +35,9 @@ public class OrderServiceImpl implements OrderService
     private final CustomerService customerService;
     private final StoreRepository storeRepository;
     private final UserRepository userRepository;
+    private final SubscriptionService subscriptionService;
+    private final StoreAccessService storeAccessService;
+    private final AuditLogService auditLogService;
 
     @Override
     @Transactional
@@ -40,22 +45,48 @@ public class OrderServiceImpl implements OrderService
     {
         UserDto cashierDto = userService.getCurrentUser();
         UserEntity cashier = userRepository.findById(cashierDto.getId())
-                .orElseThrow(() -> new Exception("Cashier not found with id: " + cashierDto.getId()));
+                .orElseThrow(() -> ExceptionMessages.notFound("Cashier", cashierDto.getId(), "create order"));
 
         if(cashier.getStoreEntity() == null || cashier.getStoreEntity().getId() == null)
         {
-            throw new Exception("Cashier's store not found for userId=" + cashier.getId()
-                    + ", storeId=" + cashierDto.getStoreId());
+            throw ExceptionMessages.required(
+                    "storeId",
+                    "Cashier has no linked store; cannot create order. Assign the cashier to a store first."
+            );
         }
 
         StoreEntity store = storeRepository.findById(cashier.getStoreEntity().getId())
-                .orElseThrow(() -> new Exception("Cashier's store not found for userId=" + cashier.getId()
-                        + ", storeId=" + cashier.getStoreEntity().getId()));
+                .orElseThrow(() -> ExceptionMessages.notFound(
+                        "Store",
+                        cashier.getStoreEntity().getId(),
+                        "create order for cashierId=" + cashier.getId()
+                ));
+
+        subscriptionService.requireActiveSubscription(store.getId());
+
+        if(orderDto.getItems() == null || orderDto.getItems().isEmpty())
+        {
+            throw ExceptionMessages.required(
+                    "items",
+                    "Order items are required. Add at least one product before creating an order."
+            );
+        }
 
         CustomerEntity customer = null;
         if(orderDto.getCustomerId() != null)
         {
             customer = customerService.getCustomer(orderDto.getCustomerId());
+            if(customer.getStoreEntity() != null
+               && customer.getStoreEntity().getId() != null
+               && false == store.getId().equals(customer.getStoreEntity().getId()))
+            {
+                throw ExceptionMessages.mismatch(
+                        "Customer does not belong to the cashier's store",
+                        "customerId", customer.getId(),
+                        "customerStoreId", customer.getStoreEntity().getId(),
+                        "storeId", store.getId()
+                );
+            }
         }
         else if(orderDto.getCustomerPhone() != null && false == orderDto.getCustomerPhone().isEmpty())
         {
@@ -75,11 +106,6 @@ public class OrderServiceImpl implements OrderService
             }
         }
 
-        else if(customerService.getCustomer(orderDto.getCustomerId()) != null)
-        {
-            customer = customerService.getCustomer(orderDto.getCustomerId());
-        }
-
         OrderEntity order = OrderEntity.builder()
                 .storeEntity(store)
                 .cashierEntity(cashier)
@@ -87,33 +113,61 @@ public class OrderServiceImpl implements OrderService
                 .paymentType(orderDto.getPaymentType())
                 .build();
 
-        List<OrderItemEntity> orderItems = orderDto.getItems()
-                                                   .stream()
-                                                   .map(itemDto ->
-                                                   {
-                                                      ProductEntity productEntity = productRepository.findById(itemDto.getProductId())
-                                                                                                     .orElseThrow(() -> new EntityNotFoundException(
-                                                                                                             "Product not found with id: " + itemDto.getProductId()
-                                                                                                             + "; cannot add order item with quantity=" + itemDto.getQuantity()));
+        List<OrderItemEntity> orderItems = new java.util.ArrayList<>();
+        for(OrderItemDto itemDto : orderDto.getItems())
+        {
+            if(itemDto.getProductId() == null)
+            {
+                throw ExceptionMessages.required(
+                        "productId",
+                        "productId is required for each order item"
+                );
+            }
+            if(itemDto.getQuantity() == null || itemDto.getQuantity() <= 0)
+            {
+                throw new IllegalArgumentException(
+                        "Order item quantity must be greater than 0 for productId=" + itemDto.getProductId()
+                );
+            }
 
-                                                      double originalPrice = productEntity.getSellingPrice();
-                                                      double discountPercentage = productEntity.getDiscountPercentage();
+            ProductEntity productEntity = productRepository.findById(itemDto.getProductId())
+                    .orElseThrow(() -> ExceptionMessages.notFound(
+                            "Product",
+                            itemDto.getProductId(),
+                            "add order item with quantity=" + itemDto.getQuantity()
+                    ));
 
-                                                      double discountAmount = (originalPrice * discountPercentage) / 100.0;
-                                                      double discountedPrice = originalPrice - discountAmount;
+            if(productEntity.getStoreEntity() == null
+               || false == store.getId().equals(productEntity.getStoreEntity().getId()))
+            {
+                throw ExceptionMessages.mismatch(
+                        "Product does not belong to the cashier's store",
+                        "productId", productEntity.getId(),
+                        "productStoreId", productEntity.getStoreEntity() != null
+                                ? productEntity.getStoreEntity().getId()
+                                : null,
+                        "storeId", store.getId()
+                );
+            }
 
-                                                      double itemTotal = discountedPrice * itemDto.getQuantity();
-                                                      double itemDiscountedTotal = discountAmount * itemDto.getQuantity();
+            double originalPrice = productEntity.getSellingPrice();
+            double discountPercentage = productEntity.getDiscountPercentage();
 
-                                                      return OrderItemEntity.builder()
-                                                              .quantity(itemDto.getQuantity())
-                                                              .price(itemTotal)
-                                                              .originalPrice(originalPrice * itemDto.getQuantity())
-                                                              .discountApplied(itemDiscountedTotal)
-                                                              .productEntity(productEntity)
-                                                              .orderEntity(order)
-                                                              .build();
-                                                   }).toList();
+            double discountAmount = (originalPrice * discountPercentage) / 100.0;
+            double discountedPrice = originalPrice - discountAmount;
+
+            double itemTotal = discountedPrice * itemDto.getQuantity();
+            double itemDiscountedTotal = discountAmount * itemDto.getQuantity();
+
+            orderItems.add(OrderItemEntity.builder()
+                    .quantity(itemDto.getQuantity())
+                    .price(itemTotal)
+                    .originalPrice(originalPrice * itemDto.getQuantity())
+                    .discountApplied(itemDiscountedTotal)
+                    .productEntity(productEntity)
+                    .orderEntity(order)
+                    .build());
+        }
 
         double subtotal = orderItems.stream().mapToDouble(OrderItemEntity::getOriginalPrice).sum();
         double totalDiscount = orderItems.stream().mapToDouble(OrderItemEntity::getDiscountApplied).sum();
@@ -124,39 +178,56 @@ public class OrderServiceImpl implements OrderService
         order.setTotalAmount(total);
         order.setItems(orderItems);
 
-        // Verify Stripe PaymentIntent succeeded before saving
-        if(orderDto.getPaymentType() == PaymentType.CARD && order.getStripePaymentIntentId() != null && false == orderDto.getStripePaymentIntentId().isBlank())
+        if(orderDto.getPaymentType() == PaymentType.CARD)
         {
-            if(false == billingService.verifyPayment(orderDto.getStripePaymentIntentId()))
+            String intentId = orderDto.getStripePaymentIntentId();
+            if(intentId == null || intentId.isBlank())
+            {
+                throw new Exception("CARD payment requires stripePaymentIntentId (use demo_… for local demo card)");
+            }
+
+            boolean demoCard = intentId.startsWith("demo_");
+            if(false == demoCard && false == billingService.verifyPayment(intentId))
             {
                 throw new Exception("CARD payment not confirmed for stripePaymentIntentId="
-                        + orderDto.getStripePaymentIntentId()
+                        + intentId
                         + "; storeId=" + store.getId()
                         + ", cashierId=" + cashier.getId());
             }
 
-            order.setStripePaymentIntentId(orderDto.getStripePaymentIntentId());
+            order.setStripePaymentIntentId(intentId);
         }
 
-        // Validate and deduct inventory BEFORE saving order
         for(OrderItemEntity item : orderItems)
         {
-            InventoryEntity inventory = inventoryRepository.findByStoreEntity_IdAndProductEntity_Id(store.getId(), item.getProductEntity().getId());
+            InventoryEntity inventory = inventoryRepository
+                    .findByStoreAndProductForUpdate(store.getId(), item.getProductEntity().getId())
+                    .orElse(null);
 
             if(inventory == null)
             {
-                throw new Exception("Product '" + item.getProductEntity().getName()
-                        + "' (productId=" + item.getProductEntity().getId()
-                        + ") has no inventory row for storeId=" + store.getId());
+                throw UserException.withDetails(
+                        "Product has no inventory row for this store; create inventory before ordering",
+                        ExceptionMessages.ctx(
+                                "productId", item.getProductEntity().getId(),
+                                "productName", item.getProductEntity().getName(),
+                                "storeId", store.getId()
+                        )
+                );
             }
 
             if(inventory.getQuantity() < item.getQuantity())
             {
-                throw new Exception("Insufficient stock for product '" + item.getProductEntity().getName()
-                                    + "' (productId=" + item.getProductEntity().getId()
-                                    + ", storeId=" + store.getId()
-                                    + "). Available=" + inventory.getQuantity()
-                                    + ", requested=" + item.getQuantity());
+                throw UserException.withDetails(
+                        "Insufficient stock for product",
+                        ExceptionMessages.ctx(
+                                "productId", item.getProductEntity().getId(),
+                                "productName", item.getProductEntity().getName(),
+                                "storeId", store.getId(),
+                                "available", inventory.getQuantity(),
+                                "requested", item.getQuantity()
+                        )
+                );
             }
 
             inventory.setQuantity(inventory.getQuantity() - item.getQuantity());
@@ -164,50 +235,64 @@ public class OrderServiceImpl implements OrderService
         }
 
         OrderEntity savedOrder = orderRepository.save(order);
-        return OrderMapper.toDto(savedOrder);
+        OrderEntity detailed = orderRepository.findDetailedById(savedOrder.getId()).orElse(savedOrder);
+        auditLogService.record(
+                store.getId(),
+                "ORDER_CREATE",
+                "Order",
+                String.valueOf(detailed.getId()),
+                "paymentType=" + orderDto.getPaymentType() + "; total=" + detailed.getTotalAmount()
+        );
+        return OrderMapper.toDto(detailed);
     }
 
     @Override
+    @Transactional
     public OrderDto updateOrder(Long id, OrderDto orderDto) throws Exception
     {
         OrderEntity order = orderRepository.findById(id)
-                                           .orElseThrow(() -> new EntityNotFoundException("Order not found with id: " + id + "; cannot update"));
+                                           .orElseThrow(() -> ExceptionMessages.notFound("Order", id, "update"));
 
         if(null != orderDto.getPaymentType())
         {
             order.setPaymentType(orderDto.getPaymentType());
         }
 
-        if(null != order.getCustomerEntity())
+        if(orderDto.getCustomerId() != null)
         {
             order.setCustomerEntity(customerService.getCustomer(orderDto.getCustomerId()));
         }
 
         if(orderDto.getItems() != null && false == orderDto.getItems().isEmpty())
         {
-            List<OrderItemEntity> updatedItems = orderDto.getItems().stream()
-                    .map(itemsDto ->
-                    {
-                        if(null == itemsDto.getProductId())
-                        {
-                            throw new EntityNotFoundException("Order item product id is invalid/null while updating orderId=" + id);
-                        }
+            List<OrderItemEntity> updatedItems = new java.util.ArrayList<>();
+            for(OrderItemDto itemsDto : orderDto.getItems())
+            {
+                if(null == itemsDto.getProductId())
+                {
+                    throw ExceptionMessages.required(
+                            "productId",
+                            "Order item productId is required while updating orderId=" + id
+                    );
+                }
 
-                        ProductEntity product = productRepository.findById(itemsDto.getProductId())
-                                .orElseThrow(() -> new EntityNotFoundException(
-                                        "Product not found with id: " + itemsDto.getProductId()
-                                        + "; cannot update orderId=" + id));
+                ProductEntity product = productRepository.findById(itemsDto.getProductId())
+                        .orElseThrow(() -> ExceptionMessages.notFound(
+                                "Product",
+                                itemsDto.getProductId(),
+                                "update orderId=" + id
+                        ));
 
-                        return OrderItemEntity.builder()
-                                .id(itemsDto.getId())
-                                .quantity(itemsDto.getQuantity())
-                                .price(itemsDto.getPrice())
-                                .originalPrice(itemsDto.getOriginalPrice())
-                                .discountApplied(itemsDto.getDiscountApplied())
-                                .productEntity(product)
-                                .orderEntity(order)
-                                .build();
-                    }).collect(Collectors.toList());
+                updatedItems.add(OrderItemEntity.builder()
+                        .id(itemsDto.getId())
+                        .quantity(itemsDto.getQuantity())
+                        .price(itemsDto.getPrice())
+                        .originalPrice(itemsDto.getOriginalPrice())
+                        .discountApplied(itemsDto.getDiscountApplied())
+                        .productEntity(product)
+                        .orderEntity(order)
+                        .build());
+            }
 
             order.setItems(updatedItems);
 
@@ -220,11 +305,12 @@ public class OrderServiceImpl implements OrderService
     }
 
     @Override
+    @Transactional(readOnly = true)
     public OrderDto getOrderById(Long id)
     {
-        return orderRepository.findById(id)
+        return orderRepository.findDetailedById(id)
                 .map(OrderMapper::toDto)
-                .orElseThrow(() -> new EntityNotFoundException("Order not found with id: " + id));
+                .orElseThrow(() -> ExceptionMessages.notFound("Order", id));
     }
 
     @Override
@@ -240,11 +326,12 @@ public class OrderServiceImpl implements OrderService
                                            Long customerId,
                                            Long cashierId,
                                            PaymentType paymentType,
-                                           OrderStatus orderStatus)
+                                           OrderStatus orderStatus) throws Exception
     {
+        storeAccessService.requireStoreAccess(storeId);
         return orderRepository.findByStoreEntity_IdOrderByCreatedAtDesc(storeId).stream()
-                .filter(order -> customerId == null || (order.getCashierEntity() != null && order.getCustomerEntity().getId().equals(customerId)))
-                .filter(order -> cashierId == null || (order.getCustomerEntity() != null && order.getCustomerEntity().getId().equals(cashierId)))
+                .filter(order -> customerId == null || (order.getCustomerEntity() != null && order.getCustomerEntity().getId().equals(customerId)))
+                .filter(order -> cashierId == null || (order.getCashierEntity() != null && order.getCashierEntity().getId().equals(cashierId)))
                 .filter(order -> paymentType == null || order.getPaymentType() == paymentType)
                 .map(OrderMapper::toDto)
                 .collect(Collectors.toList());
@@ -259,13 +346,16 @@ public class OrderServiceImpl implements OrderService
     }
 
     @Override
+    @Transactional
     public void deleteOrder(Long id)
     {
-        OrderEntity orderEntity = orderRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("Order not found with id: " + id));
+        OrderEntity orderEntity = orderRepository.findById(id)
+                .orElseThrow(() -> ExceptionMessages.notFound("Order", id, "delete"));
         orderRepository.delete(orderEntity);
     }
 
     @Override
+    @Transactional
     public void deleteAllOrders()
     {
         orderRepository.deleteAll();
@@ -280,8 +370,9 @@ public class OrderServiceImpl implements OrderService
     }
 
     @Override
-    public List<OrderDto> getTodayOrdersByStore(Long storeId)
+    public List<OrderDto> getTodayOrdersByStore(Long storeId) throws Exception
     {
+        storeAccessService.requireStoreAccess(storeId);
         LocalDate today = LocalDate.now();
         LocalDateTime start = today.atStartOfDay();
         LocalDateTime end = today.plusDays(1).atStartOfDay();
@@ -292,18 +383,25 @@ public class OrderServiceImpl implements OrderService
     }
 
     @Override
-    public List<OrderDto> getTop5RecentOrdersByStoreId(Long storeId)
+    public List<OrderDto> getTop5RecentOrdersByStoreId(Long storeId) throws Exception
     {
+        storeAccessService.requireStoreAccess(storeId);
         return orderRepository.findTopFiveByStoreEntity_IdOrderByCreatedAtDesc(storeId).stream()
                 .map(OrderMapper::toDto)
                 .collect(Collectors.toList());
     }
 
     @Override
+    @Transactional(readOnly = true)
     public ReceiptDto getReceipt(Long orderId)
     {
-        OrderEntity order = orderRepository.findById(orderId)
-                                           .orElseThrow(() -> new EntityNotFoundException("Order not found with id: " + orderId + "; cannot build receipt"));
+        OrderEntity order = orderRepository.findDetailedById(orderId)
+                                           .orElseThrow(() -> ExceptionMessages.notFound("Order", orderId, "build receipt"));
+
+        if(order.getStoreEntity() == null)
+        {
+            throw ExceptionMessages.notFound("Store", null, "build receipt for orderId=" + orderId);
+        }
 
         String receiptNumber = String.format("RCP-%d-%d", order.getStoreEntity().getId(), order.getId());
 
@@ -312,7 +410,8 @@ public class OrderServiceImpl implements OrderService
         String storeAddress = contact != null ? contact.getAddress() : null;
         String storePhone = contact != null ? contact.getPhone() : null;
 
-        List<ReceiptItemDto> receiptItems = order.getItems().stream()
+        List<OrderItemEntity> items = order.getItems() != null ? order.getItems() : List.of();
+        List<ReceiptItemDto> receiptItems = items.stream()
                 .map(item ->
                 {
                    ProductEntity product = item.getProductEntity();

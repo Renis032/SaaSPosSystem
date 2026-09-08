@@ -1,7 +1,6 @@
 package com.renko.controller;
 
 import com.renko.entities.CustomerEntity;
-import com.renko.exceptions.UserException;
 import com.renko.payload.dto.UserDto;
 import com.renko.payload.response.ApiResponse;
 import com.renko.service.CustomerService;
@@ -23,16 +22,8 @@ public class CustomerController
     private final StoreService storeService;
 
     @PostMapping
-    public ResponseEntity<CustomerEntity> createCustomer(@RequestBody CustomerEntity customerEntity,
-                                                         @RequestHeader("Authorization") String jwt) throws Exception
+    public ResponseEntity<CustomerEntity> createCustomer(@RequestBody CustomerEntity customerEntity) throws Exception
     {
-//        UserDto user = userService.getUserFromJwtToken(jwt);
-//        if(user.getStoreEntity() == null)
-//        {
-//            throw new Exception("User not associated with any store");
-//        }
-
-//        customerEntity.setStoreEntity(user.getStoreEntity());
         return ResponseEntity.ok(customerService.createCustomer(customerEntity));
     }
 
@@ -67,7 +58,7 @@ public class CustomerController
     }
 
     @GetMapping("/store/{storeId}")
-    public ResponseEntity<List<CustomerEntity>> getCustomersByStore(@PathVariable Long storeId)
+    public ResponseEntity<List<CustomerEntity>> getCustomersByStore(@PathVariable Long storeId) throws Exception
     {
         return ResponseEntity.ok(customerService.getCustomersByStoreEntity_Id(storeId));
     }

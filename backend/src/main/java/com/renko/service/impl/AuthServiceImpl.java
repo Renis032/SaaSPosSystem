@@ -45,20 +45,25 @@ public class AuthServiceImpl implements AuthService
             );
         }
 
-        if(authRequestDto.getRole() == UserRole.ADMIN &&
-           userRepository.existsByRole(UserRole.ADMIN))
+        // Public signup may only create store owners. Staff are created by store owners.
+        UserRole requestedRole = authRequestDto.getRole();
+        if(requestedRole == null || requestedRole == UserRole.USER)
+        {
+            requestedRole = UserRole.OWNER;
+        }
+        if(requestedRole != UserRole.OWNER)
         {
             throw UserException.withDetail(
-                    "Only one ADMIN user is allowed in the system",
+                    "Public signup only allows OWNER. Create cashiers and managers via the employees API.",
                     "role",
-                    UserRole.ADMIN
+                    requestedRole
             );
         }
 
         UserEntity newUserEntity = new UserEntity();
         newUserEntity.setEmail(authRequestDto.getEmail());
         newUserEntity.setPassword(passwordEncoder.encode(authRequestDto.getPassword()));
-        newUserEntity.setRole(authRequestDto.getRole());
+        newUserEntity.setRole(requestedRole);
         newUserEntity.setPhoneNumber(authRequestDto.getPhoneNumber());
         newUserEntity.setFullName(authRequestDto.getFullName());
 
