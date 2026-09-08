@@ -14,6 +14,7 @@ import com.renko.repository.OrderRepository;
 import com.renko.repository.ProductRepository;
 import com.renko.repository.StoreRepository;
 import com.renko.repository.UserRepository;
+import com.renko.service.AuditLogService;
 import com.renko.service.BillingService;
 import com.renko.service.CustomerService;
 import com.renko.service.StoreAccessService;
@@ -33,6 +34,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -50,6 +52,7 @@ class OrderServiceInventoryLockTest
     @Mock private UserRepository userRepository;
     @Mock private SubscriptionService subscriptionService;
     @Mock private StoreAccessService storeAccessService;
+    @Mock private AuditLogService auditLogService;
 
     @InjectMocks
     private OrderServiceImpl orderService;
@@ -121,7 +124,13 @@ class OrderServiceInventoryLockTest
         when(storeRepository.findById(10L)).thenReturn(Optional.of(store));
         when(productRepository.findById(5L)).thenReturn(Optional.of(product));
         when(inventoryRepository.findByStoreAndProductForUpdate(10L, 5L)).thenReturn(Optional.of(inventory));
-        when(orderRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        when(orderRepository.save(any())).thenAnswer(invocation ->
+        {
+            var order = invocation.getArgument(0, com.renko.entities.OrderEntity.class);
+            order.setId(99L);
+            return order;
+        });
+        when(orderRepository.findDetailedById(anyLong())).thenReturn(Optional.empty());
 
         OrderDto orderDto = OrderDto.builder()
                 .paymentType(PaymentType.CASH)
@@ -134,5 +143,6 @@ class OrderServiceInventoryLockTest
         verify(inventoryRepository).findByStoreAndProductForUpdate(10L, 5L);
         verify(inventoryRepository).save(inventory);
         verify(subscriptionService).requireActiveSubscription(anyLong());
+        verify(auditLogService).record(anyLong(), anyString(), anyString(), anyString(), anyString());
     }
 }
