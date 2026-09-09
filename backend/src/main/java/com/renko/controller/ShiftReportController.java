@@ -2,6 +2,7 @@ package com.renko.controller;
 
 import com.renko.exceptions.UserException;
 import com.renko.payload.dto.ShiftReportDto;
+import com.renko.payload.dto.StartShiftRequest;
 import com.renko.payload.response.ApiResponse;
 import com.renko.service.ShiftReportService;
 import lombok.RequiredArgsConstructor;
@@ -20,9 +21,10 @@ public class ShiftReportController
     private final ShiftReportService shiftReportService;
 
     @PostMapping("/start")
-    public ResponseEntity<ShiftReportDto> startShift() throws Exception
+    public ResponseEntity<ShiftReportDto> startShift(@RequestBody(required = false) StartShiftRequest body) throws Exception
     {
-        return ResponseEntity.ok(shiftReportService.startShift());
+        Long branchId = body != null ? body.getBranchId() : null;
+        return ResponseEntity.ok(shiftReportService.startShift(branchId));
     }
 
     @PatchMapping("/end")

@@ -3,6 +3,7 @@ package com.renko.service;
 import com.renko.domain.OrderStatus;
 import com.renko.domain.PaymentType;
 import com.renko.payload.dto.OrderDto;
+import com.renko.payload.dto.PageResponse;
 import com.renko.payload.dto.ReceiptDto;
 
 import java.util.List;
@@ -19,6 +20,8 @@ public interface OrderService
                                     Long cashierId,
                                     PaymentType paymentType,
                                     OrderStatus orderStatus) throws Exception;
+
+    PageResponse<OrderDto> getOrdersByStorePaged(Long storeId, int page, int size, String q) throws Exception;
 
     List<OrderDto> getOrdersByCashier(Long cashierId);
 

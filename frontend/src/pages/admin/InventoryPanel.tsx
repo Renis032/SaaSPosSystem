@@ -154,77 +154,87 @@ export function InventoryPanel() {
           </button>
         </form>
 
-        {loading ? <p className="muted">Loading…</p> : null}
-        <div className="table-wrap">
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>Product</th>
-                <th>Qty</th>
-                <th>Threshold</th>
-                <th>Add stock</th>
-                <th>Adjust (±)</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((row) => {
-                const low = isLowStock(row)
-                return (
-                  <tr key={row.id} className={low ? 'row-warn' : undefined}>
-                    <td>{row.id}</td>
-                    <td>
-                      {productName(row.productId)}
-                      {low ? <span className="stock-badge">Low stock</span> : null}
-                    </td>
-                    <td>{row.quantity}</td>
-                    <td>{row.lowStockThreshold ?? '—'}</td>
-                    <td className="inline-actions">
-                      <input
-                        type="number"
-                        min="1"
-                        placeholder="Qty"
-                        value={addQty[row.id] ?? ''}
-                        onChange={(e) => setAddQty((prev) => ({ ...prev, [row.id]: e.target.value }))}
-                      />
-                      <button
-                        type="button"
-                        className="btn btn-sm"
-                        disabled={busyId === row.id}
-                        onClick={() => void handleAddStock(row.id)}
-                      >
-                        Add
-                      </button>
-                    </td>
-                    <td className="inline-actions adjust-actions">
-                      <input
-                        type="number"
-                        placeholder="±Δ"
-                        value={adjustDelta[row.id] ?? ''}
-                        onChange={(e) => setAdjustDelta((prev) => ({ ...prev, [row.id]: e.target.value }))}
-                      />
-                      <input
-                        type="text"
-                        className="reason-input"
-                        placeholder="Reason"
-                        value={adjustReason[row.id] ?? ''}
-                        onChange={(e) => setAdjustReason((prev) => ({ ...prev, [row.id]: e.target.value }))}
-                      />
-                      <button
-                        type="button"
-                        className="btn btn-sm btn-secondary"
-                        disabled={busyId === row.id}
-                        onClick={() => void handleAdjust(row.id)}
-                      >
-                        Adjust
-                      </button>
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
-        </div>
+        {loading ? <p className="muted loading-msg">Loading inventory…</p> : null}
+        {!loading && rows.length === 0 ? (
+          <div className="empty-state">
+            <p className="muted">No inventory yet</p>
+            <button type="button" className="btn btn-secondary btn-sm" onClick={() => void load()}>
+              Refresh
+            </button>
+          </div>
+        ) : null}
+        {!loading && rows.length > 0 ? (
+          <div className="table-wrap">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Product</th>
+                  <th>Qty</th>
+                  <th>Threshold</th>
+                  <th>Add stock</th>
+                  <th>Adjust (±)</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((row) => {
+                  const low = isLowStock(row)
+                  return (
+                    <tr key={row.id} className={low ? 'row-warn' : undefined}>
+                      <td>{row.id}</td>
+                      <td>
+                        {productName(row.productId)}
+                        {low ? <span className="stock-badge">Low stock</span> : null}
+                      </td>
+                      <td>{row.quantity}</td>
+                      <td>{row.lowStockThreshold ?? '—'}</td>
+                      <td className="inline-actions">
+                        <input
+                          type="number"
+                          min="1"
+                          placeholder="Qty"
+                          value={addQty[row.id] ?? ''}
+                          onChange={(e) => setAddQty((prev) => ({ ...prev, [row.id]: e.target.value }))}
+                        />
+                        <button
+                          type="button"
+                          className="btn btn-sm"
+                          disabled={busyId === row.id}
+                          onClick={() => void handleAddStock(row.id)}
+                        >
+                          Add
+                        </button>
+                      </td>
+                      <td className="inline-actions adjust-actions">
+                        <input
+                          type="number"
+                          placeholder="±Δ"
+                          value={adjustDelta[row.id] ?? ''}
+                          onChange={(e) => setAdjustDelta((prev) => ({ ...prev, [row.id]: e.target.value }))}
+                        />
+                        <input
+                          type="text"
+                          className="reason-input"
+                          placeholder="Reason"
+                          value={adjustReason[row.id] ?? ''}
+                          onChange={(e) => setAdjustReason((prev) => ({ ...prev, [row.id]: e.target.value }))}
+                        />
+                        <button
+                          type="button"
+                          className="btn btn-sm btn-secondary"
+                          disabled={busyId === row.id}
+                          onClick={() => void handleAdjust(row.id)}
+                        >
+                          Adjust
+                        </button>
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        ) : null}
       </div>
     </div>
   )

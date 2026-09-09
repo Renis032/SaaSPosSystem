@@ -12,6 +12,7 @@ import { EmployeesPanel } from '@/pages/admin/EmployeesPanel'
 import { InventoryPanel } from '@/pages/admin/InventoryPanel'
 import { OrdersPanel } from '@/pages/admin/OrdersPanel'
 import { ProductsPanel } from '@/pages/admin/ProductsPanel'
+import { RefundsPanel } from '@/pages/admin/RefundsPanel'
 import { ReportsPanel } from '@/pages/admin/ReportsPanel'
 import { ShiftsPanel } from '@/pages/admin/ShiftsPanel'
 import { LandingPage } from '@/pages/LandingPage'
@@ -76,6 +77,7 @@ export function AppRouter() {
             <Route path="employees" element={<EmployeesPanel />} />
             <Route path="customers" element={<CustomersPanel />} />
             <Route path="orders" element={<OrdersPanel />} />
+            <Route path="refunds" element={<RefundsPanel />} />
             <Route path="reports" element={<ReportsPanel />} />
             <Route path="billing" element={<BillingPanel />} />
             <Route path="shifts" element={<ShiftsPanel />} />

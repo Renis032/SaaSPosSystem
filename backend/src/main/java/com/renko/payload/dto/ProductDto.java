@@ -28,6 +28,8 @@ public class ProductDto
 
     private Long storeId;
 
+    private Double discountPercentage;
+
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
@@ -41,6 +43,7 @@ public class ProductDto
         this.sellingPrice = productEntity.getSellingPrice();
         this.brand = productEntity.getBrand();
         this.imageUrl = productEntity.getImageUrl();
+        this.discountPercentage = productEntity.getDiscountPercentage();
         this.createdAt = productEntity.getCreatedAt();
         this.updatedAt = productEntity.getUpdatedAt();
 

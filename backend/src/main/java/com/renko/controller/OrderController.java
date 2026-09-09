@@ -38,12 +38,20 @@ public class OrderController
     }
 
     @GetMapping("/store/{storeId}")
-    public ResponseEntity<List<OrderDto>> getOrdersByStore(@PathVariable Long storeId,
-                                                           @RequestParam(required = false) Long customerId,
-                                                           @RequestParam(required = false) Long cashierId,
-                                                           @RequestParam(required = false) PaymentType paymentType,
-                                                           @RequestParam(required = false) OrderStatus orderStatus) throws Exception
+    public ResponseEntity<?> getOrdersByStore(@PathVariable Long storeId,
+                                              @RequestParam(required = false) Long customerId,
+                                              @RequestParam(required = false) Long cashierId,
+                                              @RequestParam(required = false) PaymentType paymentType,
+                                              @RequestParam(required = false) OrderStatus orderStatus,
+                                              @RequestParam(required = false) Integer page,
+                                              @RequestParam(required = false) Integer size,
+                                              @RequestParam(required = false) String q) throws Exception
     {
+        if(page != null)
+        {
+            return ResponseEntity.ok(orderService.getOrdersByStorePaged(
+                    storeId, page, size != null ? size : 20, q));
+        }
         return ResponseEntity.ok(orderService.getOrdersByStore(storeId, customerId, cashierId, paymentType, orderStatus));
     }
 

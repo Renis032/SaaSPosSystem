@@ -30,5 +30,6 @@ export function resetDemo() {
     method: 'POST',
     auth: false,
     token: null,
+    signal: AbortSignal.timeout(60_000),
   })
 }

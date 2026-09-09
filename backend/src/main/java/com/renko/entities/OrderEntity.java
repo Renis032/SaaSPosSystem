@@ -26,10 +26,17 @@ public class OrderEntity
     private Double totalAmount;
     private Double subtotal;
     private Double totalDiscount = 0.0;
+    private Double taxRate = 0.0;
+    private Double taxAmount = 0.0;
+    private Double orderDiscountPercent = 0.0;
 
     @ManyToOne
     @JoinColumn(name = "store_id")
     private StoreEntity storeEntity;
+
+    @ManyToOne
+    @JoinColumn(name = "branch_id")
+    private BranchEntity branchEntity;
 
     @ManyToOne
     @JoinColumn(name = "cashier_id")

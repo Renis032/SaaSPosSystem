@@ -16,7 +16,7 @@ export function homePathForRole(role?: string | null): string {
   if (isCashierRole(role)) return '/pos'
   if (isAdminRole(role)) return '/admin'
   if (isSimpleUserRole(role)) return '/workspace'
-  return '/workspace'
+  return '/pos'
 }
 
 export function canAccessAdmin(role?: string | null, _storeId?: number | null): boolean {

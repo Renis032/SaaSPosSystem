@@ -1,8 +1,15 @@
 import { apiClient } from '@/lib/api-client'
 import type { ShiftReport } from '@/types/models'
 
-export function startShift() {
-  return apiClient<ShiftReport>('/api/shift-report/start', { method: 'POST' })
+export type StartShiftBody = {
+  branchId?: number
+}
+
+export function startShift(body?: StartShiftBody) {
+  return apiClient<ShiftReport>('/api/shift-report/start', {
+    method: 'POST',
+    body: body?.branchId != null ? { branchId: body.branchId } : undefined,
+  })
 }
 
 export function endShift() {

@@ -13,6 +13,7 @@ const SECTIONS = [
   { to: '/admin/employees', label: 'Employees' },
   { to: '/admin/customers', label: 'Customers' },
   { to: '/admin/orders', label: 'Orders' },
+  { to: '/admin/refunds', label: 'Refunds' },
   { to: '/admin/reports', label: 'Reports' },
   { to: '/admin/billing', label: 'Billing' },
   { to: '/admin/shifts', label: 'Shifts' },

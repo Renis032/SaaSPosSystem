@@ -1,6 +1,7 @@
 import { FormEvent, useState } from 'react'
 import { Link, Navigate, useNavigate } from 'react-router-dom'
 import { signup } from '@/api/auth'
+import { PasswordField } from '@/components/ui/PasswordField'
 import { PhoneInput } from '@/components/ui/PhoneInput'
 import { ApiError } from '@/lib/api-client'
 import { DEFAULT_COUNTRY_DIAL, formatInternationalPhone } from '@/lib/country-codes'
@@ -28,18 +29,32 @@ export function SignupPage() {
     event.preventDefault()
     setError(null)
 
-    if (!form.phoneDigits) {
-      setError('Phone number is required')
+    if (!form.fullName.trim()) {
+      setError('Full name is required')
+      return
+    }
+    if (!form.email.trim()) {
+      setError('Email is required')
+      return
+    }
+    if (!form.password) {
+      setError('Password is required')
+      return
+    }
+    if (form.password.length < 6) {
+      setError('Password must be at least 6 characters')
       return
     }
 
     setLoading(true)
     try {
       const response = await signup({
-        fullName: form.fullName,
-        email: form.email,
+        fullName: form.fullName.trim(),
+        email: form.email.trim(),
         password: form.password,
-        phoneNumber: formatInternationalPhone(countryDial, form.phoneDigits),
+        phoneNumber: form.phoneDigits
+          ? formatInternationalPhone(countryDial, form.phoneDigits)
+          : undefined,
         role: 'OWNER',
       })
       if (!response.jwt) {
@@ -65,7 +80,7 @@ export function SignupPage() {
 
   return (
     <div className="auth-page">
-      <form className="auth-card" onSubmit={handleSubmit}>
+      <form className="auth-card" onSubmit={handleSubmit} noValidate>
         <div className="auth-card-header">
           <span className="app-brand-mark">R</span>
           <h1>Create owner account</h1>
@@ -73,7 +88,9 @@ export function SignupPage() {
         </div>
         {error ? <div className="app-alert error">{error}</div> : null}
         <label className="field">
-          <span className="field-label">Full name</span>
+          <span className="field-label">
+            Full name<span className="field-required"> *</span>
+          </span>
           <input
             value={form.fullName}
             onChange={(e) => setForm({ ...form, fullName: e.target.value })}
@@ -82,7 +99,9 @@ export function SignupPage() {
           />
         </label>
         <label className="field">
-          <span className="field-label">Email</span>
+          <span className="field-label">
+            Email<span className="field-required"> *</span>
+          </span>
           <input
             type="email"
             value={form.email}
@@ -91,25 +110,26 @@ export function SignupPage() {
             autoComplete="email"
           />
         </label>
-        <label className="field">
-          <span className="field-label">Password</span>
-          <input
-            type="password"
-            value={form.password}
-            onChange={(e) => setForm({ ...form, password: e.target.value })}
-            required
-            minLength={6}
-            autoComplete="new-password"
-          />
-        </label>
+        <PasswordField
+          value={form.password}
+          onChange={(password) => setForm({ ...form, password })}
+          required
+          minLength={6}
+          autoComplete="new-password"
+        />
+        <p className="field-hint">At least 6 characters</p>
         <PhoneInput
+          label="Phone (optional)"
           countryDial={countryDial}
           phoneDigits={form.phoneDigits}
           onCountryDialChange={setCountryDial}
           onPhoneDigitsChange={(phoneDigits) => setForm({ ...form, phoneDigits })}
-          required
         />
-        <button type="submit" className="btn btn-block" disabled={loading}>
+        <button
+          type="submit"
+          className="btn btn-block"
+          disabled={loading || !form.fullName.trim() || !form.email.trim() || form.password.length < 6}
+        >
           {loading ? 'Creating…' : 'Create account'}
         </button>
         <p className="auth-footer">

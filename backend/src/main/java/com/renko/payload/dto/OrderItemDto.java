@@ -18,6 +18,8 @@ public class OrderItemDto
     private Double price;
     private Double originalPrice;
     private Double discountApplied;
+    /** Optional override; when null, product.discountPercentage is used. */
+    private Double discountPercent;
 
     private Long productId;
 

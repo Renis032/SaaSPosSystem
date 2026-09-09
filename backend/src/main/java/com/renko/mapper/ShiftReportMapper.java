@@ -32,6 +32,7 @@ public class ShiftReportMapper
                 .totalOrders(entity.getTotalOrders())
                 .cashierId(entity.getCashierEntity() != null ? entity.getCashierEntity().getId() : null)
                 .storeId(entity.getStoreEntity() != null ? entity.getStoreEntity().getId() : null)
+                .branchId(entity.getBranchEntity() != null ? entity.getBranchEntity().getId() : null)
                 .paymentSummaries(mapPaymentSummaries(entity.getPaymentSummaries()))
                 .topSellingProductIds(mapProductIds(entity.getTopSellingProducts()))
                 .recentOrderIds(mapOrderIds(entity.getRecentOrders()))

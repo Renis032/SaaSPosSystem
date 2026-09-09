@@ -7,6 +7,7 @@ import com.renko.exceptions.UserException;
 import com.renko.mapper.ShiftReportMapper;
 import com.renko.payload.dto.ShiftReportDto;
 import com.renko.payload.dto.UserDto;
+import com.renko.repository.BranchRepository;
 import com.renko.repository.OrderRepository;
 import com.renko.repository.RefundRepository;
 import com.renko.repository.ShiftReportRepository;
@@ -35,9 +36,16 @@ public class ShiftReportServiceImpl implements ShiftReportService
     private final UserService userService;
     private final UserRepository userRepository;
     private final StoreAccessService storeAccessService;
+    private final BranchRepository branchRepository;
 
-@Override
+    @Override
     public ShiftReportDto startShift() throws Exception
+    {
+        return startShift(null);
+    }
+
+    @Override
+    public ShiftReportDto startShift(Long branchId) throws Exception
     {
         UserDto currentUser = userService.getCurrentUser();
         LocalDateTime shiftStart = LocalDateTime.now();
@@ -70,10 +78,27 @@ public class ShiftReportServiceImpl implements ShiftReportService
                         "start shift for cashierId=" + currentUser.getId()
                 ));
 
+        BranchEntity branch = null;
+        if(branchId != null)
+        {
+            branch = branchRepository.findById(branchId)
+                    .orElseThrow(() -> ExceptionMessages.notFound("Branch", branchId, "start shift"));
+            if(branch.getStoreEntity() == null || false == store.getId().equals(branch.getStoreEntity().getId()))
+            {
+                throw ExceptionMessages.mismatch(
+                        "Branch does not belong to the cashier's store",
+                        "branchId", branch.getId(),
+                        "branchStoreId", branch.getStoreEntity() != null ? branch.getStoreEntity().getId() : null,
+                        "storeId", store.getId()
+                );
+            }
+        }
+
         ShiftReportEntity shiftReport = ShiftReportEntity.builder()
                 .shiftStart(shiftStart)
                 .cashierEntity(cashierEntity)
                 .storeEntity(store)
+                .branchEntity(branch)
                 .topSellingProducts(new ArrayList<>())
                 .recentOrders(new ArrayList<>())
                 .refunds(new ArrayList<>())

@@ -1,13 +1,14 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { listCustomersByStore, searchCustomers } from '@/api/customers'
 import { listInventoriesByStore } from '@/api/inventory'
 import { createOrder, getOrderReceipt } from '@/api/orders'
 import { listProductsByStore } from '@/api/products'
 import { endShift, getCurrentShift, startShift } from '@/api/shifts'
 import { ApiError } from '@/lib/api-client'
 import { useActiveBranch } from '@/lib/branch-store'
-import { downloadReceiptPdf } from '@/lib/receipt-pdf'
+import { downloadReceiptPdf, printReceipt } from '@/lib/receipt-pdf'
 import { useStoreId } from '@/hooks/useStoreId'
-import type { Inventory, Product, Receipt, ShiftReport } from '@/types/models'
+import type { Customer, Inventory, Product, Receipt, ShiftReport } from '@/types/models'
 
 type CartLine = {
   product: Product
@@ -18,6 +19,36 @@ type PaymentType = 'CASH' | 'CARD' | 'UPI'
 
 function money(value?: number) {
   return `$${(value ?? 0).toFixed(2)}`
+}
+
+function estimateTotals(
+  cart: CartLine[],
+  taxRatePercent: number,
+  orderDiscountPercent: number,
+) {
+  let subtotal = 0
+  let lineDiscount = 0
+  for (const line of cart) {
+    const unit = line.product.sellingPrice
+    const discPct = line.product.discountPercentage ?? 0
+    const lineSub = unit * line.quantity
+    const lineDisc = (unit * discPct) / 100 * line.quantity
+    subtotal += lineSub
+    lineDiscount += lineDisc
+  }
+  const afterLine = subtotal - lineDiscount
+  const orderDiscount = (afterLine * orderDiscountPercent) / 100
+  const taxable = afterLine - orderDiscount
+  const taxAmount = (taxable * taxRatePercent) / 100
+  const total = taxable + taxAmount
+  return {
+    subtotal,
+    lineDiscount,
+    orderDiscount,
+    totalDiscount: lineDiscount + orderDiscount,
+    taxAmount,
+    total,
+  }
 }
 
 export function PosPage() {
@@ -37,11 +68,20 @@ export function PosPage() {
   const [paymentType, setPaymentType] = useState<PaymentType>('CASH')
   const [cardName, setCardName] = useState('Demo Cardholder')
   const [cardNumber, setCardNumber] = useState('4242 4242 4242 4242')
+  const [taxRate, setTaxRate] = useState('0')
+  const [orderDiscountPercent, setOrderDiscountPercent] = useState('0')
+  const [customers, setCustomers] = useState<Customer[]>([])
+  const [customerQuery, setCustomerQuery] = useState('')
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null)
+  const [customerBusy, setCustomerBusy] = useState(false)
   const [lastPayment, setLastPayment] = useState<{
     tendered?: number
     change?: number
     paymentType: PaymentType
   } | null>(null)
+
+  const taxRateNum = Number(taxRate) || 0
+  const discountNum = Number(orderDiscountPercent) || 0
 
   const loadCatalog = useCallback(async (id: number) => {
     setLoading(true)
@@ -64,6 +104,15 @@ export function PosPage() {
     }
   }, [])
 
+  const loadCustomers = useCallback(async (id: number) => {
+    try {
+      const list = await listCustomersByStore(id)
+      setCustomers(Array.isArray(list) ? list : [])
+    } catch {
+      setCustomers([])
+    }
+  }, [])
+
   const loadShift = useCallback(async () => {
     try {
       const current = await getCurrentShift()
@@ -80,9 +129,10 @@ export function PosPage() {
   useEffect(() => {
     if (storeId) {
       void loadCatalog(storeId)
+      void loadCustomers(storeId)
       void loadShift()
     }
-  }, [storeId, loadCatalog, loadShift])
+  }, [storeId, loadCatalog, loadCustomers, loadShift])
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase()
@@ -95,21 +145,34 @@ export function PosPage() {
     )
   }, [products, search])
 
-  const cartTotal = useMemo(
-    () => cart.reduce((sum, line) => sum + line.product.sellingPrice * line.quantity, 0),
-    [cart],
+  const totals = useMemo(
+    () => estimateTotals(cart, taxRateNum, discountNum),
+    [cart, taxRateNum, discountNum],
   )
 
   const tenderedAmount = Number(tendered)
   const cashReady =
     paymentType !== 'CASH' ||
-    (tendered !== '' && !Number.isNaN(tenderedAmount) && tenderedAmount >= cartTotal)
+    (tendered !== '' && !Number.isNaN(tenderedAmount) && tenderedAmount >= totals.total)
   const cardReady =
     paymentType !== 'CARD' ||
     (cardName.trim().length > 1 && cardNumber.replace(/\s/g, '').length >= 12)
   const changeDue =
-    paymentType === 'CASH' && cashReady ? tenderedAmount - cartTotal : 0
+    paymentType === 'CASH' && cashReady ? tenderedAmount - totals.total : 0
   const canCheckout = cart.length > 0 && cashReady && cardReady && !checkingOut
+
+  const customerMatches = useMemo(() => {
+    const q = customerQuery.trim().toLowerCase()
+    if (!q) return customers.slice(0, 8)
+    return customers
+      .filter(
+        (c) =>
+          c.fullName.toLowerCase().includes(q) ||
+          (c.email ?? '').toLowerCase().includes(q) ||
+          (c.phone ?? '').toLowerCase().includes(q),
+      )
+      .slice(0, 8)
+  }, [customers, customerQuery])
 
   function stockFor(productId: number): number {
     return inventoryByProduct[productId]?.quantity ?? 0
@@ -180,6 +243,25 @@ export function PosPage() {
     return null
   }
 
+  async function handleCustomerSearch() {
+    const q = customerQuery.trim()
+    if (!q) {
+      if (storeId) void loadCustomers(storeId)
+      return
+    }
+    setCustomerBusy(true)
+    try {
+      const remote = await searchCustomers(q)
+      if (Array.isArray(remote) && remote.length > 0) {
+        setCustomers(remote)
+      }
+    } catch {
+      // Local filter still works from loaded list
+    } finally {
+      setCustomerBusy(false)
+    }
+  }
+
   async function handleCheckout() {
     if (!storeId || cart.length === 0) return
     setError(null)
@@ -227,6 +309,10 @@ export function PosPage() {
       const last4 = cardNumber.replace(/\D/g, '').slice(-4) || '4242'
       const order = await createOrder({
         storeId,
+        customerId: selectedCustomer?.id,
+        branchId: activeBranch?.id,
+        taxRate: taxRateNum,
+        orderDiscountPercent: discountNum,
         paymentType,
         stripePaymentIntentId:
           paymentType === 'CARD' ? `demo_pi_${Date.now()}_${last4}` : undefined,
@@ -238,8 +324,8 @@ export function PosPage() {
       const receiptData = await getOrderReceipt(order.id)
       setLastPayment({
         paymentType,
-        tendered: paymentType === 'CASH' ? tenderedAmount : cartTotal,
-        change: paymentType === 'CASH' ? tenderedAmount - cartTotal : 0,
+        tendered: paymentType === 'CASH' ? tenderedAmount : totals.total,
+        change: paymentType === 'CASH' ? tenderedAmount - totals.total : 0,
       })
       setReceipt(receiptData)
       setCart([])
@@ -257,7 +343,9 @@ export function PosPage() {
     setShiftBusy(true)
     setError(null)
     try {
-      const started = await startShift()
+      const started = await startShift(
+        activeBranch?.id != null ? { branchId: activeBranch.id } : undefined,
+      )
       setShift(started)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not start shift')
@@ -296,6 +384,12 @@ export function PosPage() {
   }
 
   const shiftOpen = Boolean(shift && !shift.shiftEnd)
+  const receiptOpts = {
+    branch: activeBranch,
+    paymentType: lastPayment?.paymentType ?? receipt?.paymentType,
+    tendered: lastPayment?.tendered,
+    change: lastPayment?.change,
+  }
 
   return (
     <div className="pos-page">
@@ -350,8 +444,18 @@ export function PosPage() {
             />
           </div>
           <div className="panel-body">
-            {loading ? <p className="muted">Loading products…</p> : null}
-            {!loading && filtered.length === 0 ? <p className="muted">No products found.</p> : null}
+            {loading ? <p className="muted loading-msg">Loading catalog…</p> : null}
+            {!loading && products.length === 0 ? (
+              <div className="empty-state">
+                <p className="muted">No products yet</p>
+                <button type="button" className="btn btn-secondary btn-sm" onClick={() => void loadCatalog(storeId)}>
+                  Refresh
+                </button>
+              </div>
+            ) : null}
+            {!loading && products.length > 0 && filtered.length === 0 ? (
+              <p className="muted">No products match your search.</p>
+            ) : null}
             <div className="product-grid">
               {filtered.map((product) => {
                 const stock = stockFor(product.id)
@@ -386,6 +490,76 @@ export function PosPage() {
             </p>
           </div>
           <div className="panel-body cart-body">
+            <div className="customer-picker">
+              <span className="field-label">Customer</span>
+              {selectedCustomer ? (
+                <div className="customer-selected">
+                  <div>
+                    <strong>{selectedCustomer.fullName}</strong>
+                    <span className="muted">
+                      {[selectedCustomer.phone, selectedCustomer.email].filter(Boolean).join(' · ') ||
+                        `ID ${selectedCustomer.id}`}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-secondary"
+                    onClick={() => setSelectedCustomer(null)}
+                  >
+                    Clear
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <div className="customer-search-row">
+                    <input
+                      className="pos-search"
+                      placeholder="Search customer…"
+                      value={customerQuery}
+                      onChange={(e) => setCustomerQuery(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault()
+                          void handleCustomerSearch()
+                        }
+                      }}
+                    />
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-secondary"
+                      disabled={customerBusy}
+                      onClick={() => void handleCustomerSearch()}
+                    >
+                      {customerBusy ? '…' : 'Find'}
+                    </button>
+                  </div>
+                  {customerMatches.length > 0 ? (
+                    <ul className="customer-results">
+                      {customerMatches.map((customer) => (
+                        <li key={customer.id}>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedCustomer(customer)
+                              setCustomerQuery('')
+                            }}
+                          >
+                            <strong>{customer.fullName}</strong>
+                            <span>
+                              {[customer.phone, customer.email].filter(Boolean).join(' · ') ||
+                                `#${customer.id}`}
+                            </span>
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="muted">No customer selected — guest checkout.</p>
+                  )}
+                </>
+              )}
+            </div>
+
             {cart.length === 0 ? <p className="muted">Tap products to add them.</p> : null}
             <ul className="cart-list">
               {cart.map((line) => {
@@ -426,9 +600,52 @@ export function PosPage() {
             </ul>
 
             <div className="cart-footer">
-              <div className="cart-total">
-                <span>Total</span>
-                <strong>{money(cartTotal)}</strong>
+              <div className="order-adjust-fields">
+                <label className="tender-field">
+                  <span className="field-label">Tax rate (%)</span>
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="0.01"
+                    value={taxRate}
+                    onChange={(e) => setTaxRate(e.target.value)}
+                  />
+                </label>
+                <label className="tender-field">
+                  <span className="field-label">Order discount (%)</span>
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="0.01"
+                    value={orderDiscountPercent}
+                    onChange={(e) => setOrderDiscountPercent(e.target.value)}
+                  />
+                </label>
+              </div>
+
+              <div className="cart-totals">
+                <div>
+                  <span>Subtotal</span>
+                  <strong>{money(totals.subtotal)}</strong>
+                </div>
+                {totals.totalDiscount > 0 ? (
+                  <div>
+                    <span>Discount</span>
+                    <strong>−{money(totals.totalDiscount)}</strong>
+                  </div>
+                ) : null}
+                {taxRateNum > 0 ? (
+                  <div>
+                    <span>Tax ({taxRateNum}%)</span>
+                    <strong>{money(totals.taxAmount)}</strong>
+                  </div>
+                ) : null}
+                <div className="cart-total">
+                  <span>Total</span>
+                  <strong>{money(totals.total)}</strong>
+                </div>
               </div>
 
               <div className="pay-type-row" role="group" aria-label="Payment type">
@@ -502,16 +719,22 @@ export function PosPage() {
             </div>
 
             {receipt ? (
-              <div className="receipt-box">
+              <div className="receipt-box receipt-print">
                 <h3>Receipt {receipt.receiptNumber ?? `#${receipt.orderId}`}</h3>
                 <p>
                   {receipt.storeName ?? 'Store'}
-                  {activeBranch ? ` · ${activeBranch.name}` : ''} ·{' '}
-                  {receipt.orderDate ? new Date(receipt.orderDate).toLocaleString() : ''}
+                  {receipt.branchName || activeBranch
+                    ? ` · ${receipt.branchName ?? activeBranch?.name}`
+                    : ''}{' '}
+                  · {receipt.orderDate ? new Date(receipt.orderDate).toLocaleString() : ''}
                 </p>
                 <p>
-                  Cashier: {receipt.cashierName ?? '—'} · {lastPayment?.paymentType ?? 'CASH'}
+                  Cashier: {receipt.cashierName ?? '—'} ·{' '}
+                  {lastPayment?.paymentType ?? receipt.paymentType ?? 'CASH'}
                 </p>
+                {(receipt.customerName || selectedCustomer) && (
+                  <p>Customer: {receipt.customerName ?? selectedCustomer?.fullName}</p>
+                )}
                 <ul>
                   {(receipt.items ?? []).map((item, index) => (
                     <li key={`${item.name}-${index}`}>
@@ -522,6 +745,38 @@ export function PosPage() {
                     </li>
                   ))}
                 </ul>
+                <div className="receipt-totals">
+                  {receipt.subtotal != null ? (
+                    <div>
+                      <span>Subtotal</span>
+                      <strong>{money(receipt.subtotal)}</strong>
+                    </div>
+                  ) : null}
+                  {receipt.totalDiscount != null && receipt.totalDiscount > 0 ? (
+                    <div>
+                      <span>Discount</span>
+                      <strong>−{money(receipt.totalDiscount)}</strong>
+                    </div>
+                  ) : null}
+                  {receipt.taxRate != null && receipt.taxRate > 0 ? (
+                    <div>
+                      <span>Tax ({receipt.taxRate}%)</span>
+                      <strong>{money(receipt.taxAmount)}</strong>
+                    </div>
+                  ) : null}
+                  <div>
+                    <span>Total</span>
+                    <strong>
+                      {money(
+                        receipt.totalAmount ??
+                          (receipt.items ?? []).reduce(
+                            (sum, item) => sum + (item.lineTotal ?? item.finalPrice ?? 0),
+                            0,
+                          ),
+                      )}
+                    </strong>
+                  </div>
+                </div>
                 {lastPayment?.paymentType === 'CASH' ? (
                   <div className="receipt-tender">
                     <div>
@@ -534,20 +789,22 @@ export function PosPage() {
                     </div>
                   </div>
                 ) : null}
-                <button
-                  type="button"
-                  className="btn btn-secondary btn-block"
-                  onClick={() =>
-                    downloadReceiptPdf(receipt, {
-                      branch: activeBranch,
-                      paymentType: lastPayment?.paymentType,
-                      tendered: lastPayment?.tendered,
-                      change: lastPayment?.change,
-                    })
-                  }
-                >
-                  Download PDF
-                </button>
+                <div className="receipt-actions">
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    onClick={() => downloadReceiptPdf(receipt, receiptOpts)}
+                  >
+                    Download PDF
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    onClick={() => printReceipt(receipt, receiptOpts)}
+                  >
+                    Print
+                  </button>
+                </div>
               </div>
             ) : null}
           </div>

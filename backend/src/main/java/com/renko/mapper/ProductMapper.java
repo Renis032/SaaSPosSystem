@@ -26,6 +26,10 @@ public class ProductMapper
         productEntity.setSellingPrice(productDto.getSellingPrice());
         productEntity.setBrand(productDto.getBrand());
         productEntity.setImageUrl(productDto.getImageUrl());
+        if(productDto.getDiscountPercentage() != null)
+        {
+            productEntity.setDiscountPercentage(productDto.getDiscountPercentage());
+        }
         productEntity.setCategoryEntity(categoryEntity);
         productEntity.setStoreEntity(storeEntity);
         productEntity.setCreatedAt(productDto.getCreatedAt());

@@ -46,9 +46,17 @@ public class ProductController
     }
 
     @GetMapping("/store/{storeId}")
-    public ResponseEntity<List<ProductDto>> getByStoreId(@PathVariable Long storeId,
-                                                         @RequestHeader("Authorization") String jwt) throws Exception
+    public ResponseEntity<?> getByStoreId(@PathVariable Long storeId,
+                                          @RequestParam(required = false) Integer page,
+                                          @RequestParam(required = false) Integer size,
+                                          @RequestParam(required = false) String q,
+                                          @RequestHeader("Authorization") String jwt) throws Exception
     {
+        if(page != null)
+        {
+            return ResponseEntity.ok(productService.getProductsByStoreIdPaged(
+                    storeId, page, size != null ? size : 20, q));
+        }
         return ResponseEntity.ok(productService.getProductsByStoreId(storeId));
     }
 

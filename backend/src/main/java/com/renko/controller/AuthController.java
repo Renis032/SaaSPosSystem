@@ -1,12 +1,11 @@
 package com.renko.controller;
 
+import jakarta.validation.Valid;
 import com.renko.exceptions.UserException;
 import com.renko.payload.dto.AuthRequestDto;
-import com.renko.payload.dto.UserDto;
 import com.renko.payload.response.AuthResponse;
 import com.renko.service.AuthService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -21,13 +20,13 @@ public class AuthController
     private final AuthService authService;
 
     @PostMapping("/signup")
-    public ResponseEntity<AuthResponse> signUp(@RequestBody AuthRequestDto authRequestDto) throws UserException
+    public ResponseEntity<AuthResponse> signUp(@Valid @RequestBody AuthRequestDto authRequestDto) throws UserException
     {
         return ResponseEntity.ok(authService.signUp(authRequestDto));
     }
 
     @PostMapping("/login")
-    public ResponseEntity<AuthResponse> login(@RequestBody AuthRequestDto authRequestDto) throws UserException
+    public ResponseEntity<AuthResponse> login(@Valid @RequestBody AuthRequestDto authRequestDto) throws UserException
     {
         return ResponseEntity.ok(authService.login(authRequestDto));
     }

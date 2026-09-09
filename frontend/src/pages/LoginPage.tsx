@@ -1,6 +1,7 @@
-import { FormEvent, useState } from 'react'
+import { FormEvent, useEffect, useState } from 'react'
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { login } from '@/api/auth'
+import { PasswordField } from '@/components/ui/PasswordField'
 import { ApiError } from '@/lib/api-client'
 import { homePathForRole } from '@/lib/roles'
 import { setAuthSession, useAuth } from '@/stores/auth-store'
@@ -15,22 +16,16 @@ const DEMO_ROLES = [
     blurb: 'Full store admin, billing, staff',
   },
   {
-    id: 'cashier',
-    label: 'Cashier',
-    email: 'cashier@renko.demo',
-    blurb: 'POS sell screen and shifts',
-  },
-  {
     id: 'manager',
     label: 'Manager',
     email: 'manager@renko.demo',
     blurb: 'Back office without ownership',
   },
   {
-    id: 'user',
-    label: 'Simple user',
-    email: 'user@renko.demo',
-    blurb: 'Limited workspace access only',
+    id: 'cashier',
+    label: 'Cashier',
+    email: 'cashier@renko.demo',
+    blurb: 'POS sell screen and shifts',
   },
 ] as const
 
@@ -40,13 +35,26 @@ export function LoginPage() {
   const { token, user } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
-  const from = (location.state as { from?: string } | null)?.from
+  const from = (location.state as { from?: string; demoRole?: DemoRoleId } | null)?.from
+  const demoRoleFromNav = (location.state as { demoRole?: DemoRoleId } | null)?.demoRole
 
-  const [selectedRole, setSelectedRole] = useState<DemoRoleId | null>(null)
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
+  const [selectedRole, setSelectedRole] = useState<DemoRoleId | null>(demoRoleFromNav ?? null)
+  const [email, setEmail] = useState(() => {
+    const role = DEMO_ROLES.find((r) => r.id === demoRoleFromNav)
+    return role?.email ?? ''
+  })
+  const [password, setPassword] = useState(() => (demoRoleFromNav ? DEMO_PASSWORD : ''))
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    if (!demoRoleFromNav) return
+    const role = DEMO_ROLES.find((r) => r.id === demoRoleFromNav)
+    if (!role) return
+    setSelectedRole(demoRoleFromNav)
+    setEmail(role.email)
+    setPassword(DEMO_PASSWORD)
+  }, [demoRoleFromNav])
 
   if (token) {
     return <Navigate to={from || homePathForRole(user?.role)} replace />
@@ -64,9 +72,23 @@ export function LoginPage() {
   async function handleSubmit(event: FormEvent) {
     event.preventDefault()
     setError(null)
+
+    if (!email.trim()) {
+      setError('Email is required')
+      return
+    }
+    if (!password) {
+      setError('Password is required')
+      return
+    }
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters')
+      return
+    }
+
     setLoading(true)
     try {
-      const response = await login({ email, password })
+      const response = await login({ email: email.trim(), password })
       if (!response.jwt) {
         throw new Error(response.message || 'Login did not return a token')
       }
@@ -92,13 +114,13 @@ export function LoginPage() {
 
   return (
     <div className="auth-page">
-      <form className="auth-card auth-card-wide" onSubmit={handleSubmit}>
+      <form className="auth-card auth-card-wide" onSubmit={handleSubmit} noValidate>
         <div className="auth-card-header">
           <Link to="/" className="app-brand-mark" aria-label="Renko home">
             R
           </Link>
           <h1>Sign in</h1>
-          <p>Choose a demo role, or enter any account</p>
+          <p>Choose Owner, Manager, or Cashier</p>
         </div>
 
         {error ? <div className="app-alert error">{error}</div> : null}
@@ -125,7 +147,7 @@ export function LoginPage() {
           </div>
           {selected ? (
             <p className="demo-role-hint muted">
-              Using <code>{selected.email}</code> · password <code>{DEMO_PASSWORD}</code>
+              Using <code>{selected.email}</code>
             </p>
           ) : (
             <p className="demo-role-hint muted">Select a role to auto-fill demo credentials.</p>
@@ -133,7 +155,9 @@ export function LoginPage() {
         </fieldset>
 
         <label className="field">
-          <span className="field-label">Email</span>
+          <span className="field-label">
+            Email<span className="field-required"> *</span>
+          </span>
           <input
             type="email"
             value={email}
@@ -145,16 +169,16 @@ export function LoginPage() {
             autoComplete="email"
           />
         </label>
-        <label className="field">
-          <span className="field-label">Password</span>
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            autoComplete="current-password"
-          />
-        </label>
+        <PasswordField
+          value={password}
+          onChange={(value) => {
+            setPassword(value)
+            setSelectedRole(null)
+          }}
+          required
+          minLength={6}
+          autoComplete="current-password"
+        />
         <button type="submit" className="btn btn-block" disabled={loading || !email || !password}>
           {loading
             ? 'Signing in…'

@@ -19,6 +19,7 @@ import com.renko.service.StoreAccessService;
 import com.renko.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -39,6 +40,7 @@ public class RefundServiceImpl implements RefundService
     private final AuditLogService auditLogService;
 
     @Override
+    @Transactional
     public RefundDto createRefund(RefundDto refundDto) throws Exception
     {
         if(refundDto.getOrderId() == null)
@@ -49,12 +51,16 @@ public class RefundServiceImpl implements RefundService
             );
         }
 
-        OrderEntity order = orderRepository.findById(refundDto.getOrderId())
-                .orElseThrow(() -> ExceptionMessages.notFound(
-                        "Order",
-                        refundDto.getOrderId(),
-                        "create refund"
-                ));
+        OrderEntity order = orderRepository.findDetailedById(refundDto.getOrderId())
+                .orElseGet(() -> orderRepository.findById(refundDto.getOrderId()).orElse(null));
+        if(order == null)
+        {
+            throw ExceptionMessages.notFound(
+                    "Order",
+                    refundDto.getOrderId(),
+                    "create refund"
+            );
+        }
 
         StoreEntity store = order.getStoreEntity();
         if(store == null)

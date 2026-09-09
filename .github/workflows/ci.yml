@@ -19,7 +19,7 @@ jobs:
           java-version: '21'
           cache: maven
       - name: Unit tests
-        run: ./mvnw -B test -Dtest=StoreAccessServiceImplTest,OrderServiceInventoryLockTest,AuditLogServiceImplTest
+        run: ./mvnw -B test -Dtest=StoreAccessServiceImplTest,OrderServiceInventoryLockTest,AuditLogServiceImplTest,OrderStockRefundIntegrationTest
 
   frontend:
     runs-on: ubuntu-latest

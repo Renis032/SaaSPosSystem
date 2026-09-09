@@ -53,6 +53,7 @@ class OrderServiceInventoryLockTest
     @Mock private SubscriptionService subscriptionService;
     @Mock private StoreAccessService storeAccessService;
     @Mock private AuditLogService auditLogService;
+    @Mock private com.renko.repository.BranchRepository branchRepository;
 
     @InjectMocks
     private OrderServiceImpl orderService;

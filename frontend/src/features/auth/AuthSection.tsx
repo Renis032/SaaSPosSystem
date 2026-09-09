@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Field } from '@/components/ui/Field'
+import { PasswordField } from '@/components/ui/PasswordField'
 import { PhoneInput } from '@/components/ui/PhoneInput'
 import { ActionRow, Section } from '@/components/ui/Section'
 import { apiClient } from '@/lib/api-client'
@@ -51,28 +52,29 @@ export function AuthSection({ onRun, onTokenChange }: AuthSectionProps) {
       <ActionRow title="Signup">
         <div className="form-grid">
           <Field
-            label="Full name"
+            label="Full name *"
             value={signup.fullName}
             onChange={(e) => setSignup({ ...signup, fullName: e.target.value })}
           />
           <Field
-            label="Email"
+            label="Email *"
             type="email"
             value={signup.email}
             onChange={(e) => setSignup({ ...signup, email: e.target.value })}
           />
-          <Field
-            label="Password"
-            type="password"
+          <PasswordField
             value={signup.password}
-            onChange={(e) => setSignup({ ...signup, password: e.target.value })}
+            onChange={(password) => setSignup({ ...signup, password })}
+            required
+            minLength={6}
+            autoComplete="new-password"
           />
           <PhoneInput
+            label="Phone (optional)"
             countryDial={countryDial}
             phoneDigits={signup.phoneDigits}
             onCountryDialChange={setCountryDial}
             onPhoneDigitsChange={(phoneDigits) => setSignup({ ...signup, phoneDigits })}
-            required
           />
           <Field
             as="select"
@@ -93,7 +95,9 @@ export function AuthSection({ onRun, onTokenChange }: AuthSectionProps) {
                   fullName: signup.fullName,
                   email: signup.email,
                   password: signup.password,
-                  phoneNumber: formatInternationalPhone(countryDial, signup.phoneDigits),
+                  phoneNumber: signup.phoneDigits
+                    ? formatInternationalPhone(countryDial, signup.phoneDigits)
+                    : undefined,
                   role: signup.role,
                 },
                 auth: false,
@@ -108,16 +112,17 @@ export function AuthSection({ onRun, onTokenChange }: AuthSectionProps) {
       <ActionRow title="Login">
         <div className="form-grid">
           <Field
-            label="Email"
+            label="Email *"
             type="email"
             value={login.email}
             onChange={(e) => setLogin({ ...login, email: e.target.value })}
           />
-          <Field
-            label="Password"
-            type="password"
+          <PasswordField
             value={login.password}
-            onChange={(e) => setLogin({ ...login, password: e.target.value })}
+            onChange={(password) => setLogin({ ...login, password })}
+            required
+            minLength={6}
+            autoComplete="current-password"
           />
         </div>
         <button

@@ -89,40 +89,52 @@ export function ReportsPanel() {
 
         <h3>Audit log</h3>
         {auditError ? <div className="app-alert error">{auditError}</div> : null}
-        <div className="table-wrap">
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>When</th>
-                <th>Actor</th>
-                <th>Action</th>
-                <th>Entity</th>
-                <th>Details</th>
-              </tr>
-            </thead>
-            <tbody>
-              {audit.length === 0 && !loading ? (
+        {audit.length === 0 && !loading ? (
+          <div className="empty-state">
+            <p>No audit entries yet</p>
+            <p className="muted">Product price changes, stock adjusts, orders, and refunds appear here.</p>
+          </div>
+        ) : (
+          <div className="table-wrap">
+            <table className="data-table">
+              <thead>
                 <tr>
-                  <td colSpan={5} className="muted">
-                    No audit entries.
-                  </td>
+                  <th>When</th>
+                  <th>Actor</th>
+                  <th>Action</th>
+                  <th>Entity</th>
+                  <th>Before → After</th>
+                  <th>Details</th>
                 </tr>
-              ) : null}
-              {audit.map((entry) => (
-                <tr key={entry.id}>
-                  <td>{entry.createdAt ? new Date(entry.createdAt).toLocaleString() : '—'}</td>
-                  <td>{entry.actorEmail ?? (entry.actorUserId != null ? `#${entry.actorUserId}` : '—')}</td>
-                  <td>{entry.action}</td>
-                  <td>
-                    {entry.entityType}
-                    {entry.entityId ? ` #${entry.entityId}` : ''}
-                  </td>
-                  <td className="audit-details">{entry.details ?? '—'}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {audit.map((entry) => (
+                  <tr key={entry.id}>
+                    <td>{entry.createdAt ? new Date(entry.createdAt).toLocaleString() : '—'}</td>
+                    <td>{entry.actorEmail ?? (entry.actorUserId != null ? `#${entry.actorUserId}` : '—')}</td>
+                    <td>{entry.action}</td>
+                    <td>
+                      {entry.entityType}
+                      {entry.entityId ? ` #${entry.entityId}` : ''}
+                    </td>
+                    <td className="audit-change">
+                      {entry.beforeState || entry.afterState ? (
+                        <>
+                          <span className="audit-before">{entry.beforeState ?? '—'}</span>
+                          <span className="audit-arrow">→</span>
+                          <span className="audit-after">{entry.afterState ?? '—'}</span>
+                        </>
+                      ) : (
+                        '—'
+                      )}
+                    </td>
+                    <td className="audit-details">{entry.details ?? '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   )

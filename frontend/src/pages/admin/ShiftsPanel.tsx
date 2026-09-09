@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useState } from 'react'
 import { endShift, getCurrentShift, listShiftsByStore, startShift } from '@/api/shifts'
 import { ApiError } from '@/lib/api-client'
+import { useActiveBranch } from '@/lib/branch-store'
 import { useAdminContext } from '@/pages/admin/admin-context'
 import type { ShiftReport } from '@/types/models'
 
 export function ShiftsPanel() {
   const { storeId } = useAdminContext()
+  const activeBranch = useActiveBranch()
   const [shifts, setShifts] = useState<ShiftReport[]>([])
   const [current, setCurrent] = useState<ShiftReport | null>(null)
   const [loading, setLoading] = useState(true)
@@ -40,7 +42,9 @@ export function ShiftsPanel() {
     setBusy(true)
     setError(null)
     try {
-      setCurrent(await startShift())
+      setCurrent(
+        await startShift(activeBranch?.id != null ? { branchId: activeBranch.id } : undefined),
+      )
       await load()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Start failed')
@@ -91,33 +95,45 @@ export function ShiftsPanel() {
             ? `#${current?.id} started ${current?.shiftStart ? new Date(current.shiftStart).toLocaleString() : '—'}`
             : 'None open'}
         </div>
-        {loading ? <p className="muted">Loading…</p> : null}
-        <div className="table-wrap">
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>Start</th>
-                <th>End</th>
-                <th>Cashier</th>
-                <th>Orders</th>
-                <th>Net sales</th>
-              </tr>
-            </thead>
-            <tbody>
-              {shifts.map((shift) => (
-                <tr key={shift.id}>
-                  <td>{shift.id}</td>
-                  <td>{shift.shiftStart ? new Date(shift.shiftStart).toLocaleString() : '—'}</td>
-                  <td>{shift.shiftEnd ? new Date(shift.shiftEnd).toLocaleString() : 'Open'}</td>
-                  <td>{shift.cashierId ?? '—'}</td>
-                  <td>{shift.totalOrders ?? 0}</td>
-                  <td>${(shift.netSales ?? 0).toFixed(2)}</td>
+        {loading ? <p className="muted loading-msg">Loading shifts…</p> : null}
+        {!loading && shifts.length === 0 ? (
+          <div className="empty-state">
+            <p className="muted">No shifts yet</p>
+            <button type="button" className="btn btn-secondary btn-sm" onClick={() => void load()}>
+              Refresh
+            </button>
+          </div>
+        ) : null}
+        {!loading && shifts.length > 0 ? (
+          <div className="table-wrap">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Start</th>
+                  <th>End</th>
+                  <th>Branch</th>
+                  <th>Cashier</th>
+                  <th>Orders</th>
+                  <th>Net sales</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {shifts.map((shift) => (
+                  <tr key={shift.id}>
+                    <td>{shift.id}</td>
+                    <td>{shift.shiftStart ? new Date(shift.shiftStart).toLocaleString() : '—'}</td>
+                    <td>{shift.shiftEnd ? new Date(shift.shiftEnd).toLocaleString() : 'Open'}</td>
+                    <td>{shift.branchId ?? '—'}</td>
+                    <td>{shift.cashierId ?? '—'}</td>
+                    <td>{shift.totalOrders ?? 0}</td>
+                    <td>${(shift.netSales ?? 0).toFixed(2)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : null}
       </div>
     </div>
   )

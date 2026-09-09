@@ -20,20 +20,20 @@ public class OrderDto
     private Double totalAmount;
     private Double subtotal;
     private Double totalDiscount;
+    private Double taxRate;
+    private Double taxAmount;
+    private Double orderDiscountPercent;
 
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
     private Long storeId;
+    private Long branchId;
     private Long customerId;
     private Long cashierId;
 
     private String customerName;
     private String customerPhone;
-
-    // Since we have the customer, the name phone are not necessary?
-//    @com.fasterxml.jackson.annotation.JsonIgnoreProperties("store")
-//    private CustomerEntity customer;
 
     private PaymentType paymentType;
 

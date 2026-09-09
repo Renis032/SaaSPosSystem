@@ -10,6 +10,8 @@ public interface ShiftReportService
 {
     ShiftReportDto startShift() throws Exception;
 
+    ShiftReportDto startShift(Long branchId) throws Exception;
+
     ShiftReportDto endShift(Long shiftReportId,
                             LocalDateTime shiftEnd) throws Exception;
 

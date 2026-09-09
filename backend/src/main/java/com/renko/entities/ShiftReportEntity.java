@@ -35,6 +35,10 @@ public class ShiftReportEntity
     @JoinColumn(name = "store_id", nullable = false)
     private StoreEntity storeEntity;
 
+    @ManyToOne
+    @JoinColumn(name = "branch_id")
+    private BranchEntity branchEntity;
+
     @Transient
     private List<PaymentSummaryEntity> paymentSummaries;
 

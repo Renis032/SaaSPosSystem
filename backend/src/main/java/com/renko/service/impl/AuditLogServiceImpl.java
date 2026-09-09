@@ -27,6 +27,19 @@ public class AuditLogServiceImpl implements AuditLogService
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void record(Long storeId, String action, String entityType, String entityId, String details)
     {
+        recordChange(storeId, action, entityType, entityId, null, null, details);
+    }
+
+    @Override
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void recordChange(Long storeId,
+                             String action,
+                             String entityType,
+                             String entityId,
+                             String beforeState,
+                             String afterState,
+                             String details)
+    {
         try
         {
             Long actorId = null;
@@ -42,6 +55,14 @@ public class AuditLogServiceImpl implements AuditLogService
                 // system / unauthenticated path
             }
 
+            String combined = details;
+            if(beforeState != null || afterState != null)
+            {
+                String change = "before=" + (beforeState != null ? beforeState : "")
+                        + "; after=" + (afterState != null ? afterState : "");
+                combined = details == null || details.isBlank() ? change : details + "; " + change;
+            }
+
             auditLogRepository.save(AuditLogEntity.builder()
                     .storeId(storeId)
                     .actorUserId(actorId)
@@ -49,7 +70,9 @@ public class AuditLogServiceImpl implements AuditLogService
                     .action(action)
                     .entityType(entityType)
                     .entityId(entityId)
-                    .details(details)
+                    .details(combined)
+                    .beforeState(beforeState)
+                    .afterState(afterState)
                     .build());
         }
         catch(Exception e)

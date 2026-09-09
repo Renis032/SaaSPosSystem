@@ -35,6 +35,15 @@ public class AuthServiceImpl implements AuthService
     @Override
     public AuthResponse signUp(AuthRequestDto authRequestDto) throws UserException
     {
+        if(authRequestDto.getFullName() == null || authRequestDto.getFullName().isBlank())
+        {
+            throw UserException.withDetail(
+                    "Full name is required",
+                    "fullName",
+                    authRequestDto.getFullName()
+            );
+        }
+
         UserEntity userEntity = userRepository.findByEmail(authRequestDto.getEmail());
         if(userEntity != null)
         {

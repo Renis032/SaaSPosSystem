@@ -7,6 +7,7 @@ import com.renko.exceptions.ExceptionMessages;
 import com.renko.exceptions.UserException;
 import com.renko.mapper.OrderMapper;
 import com.renko.payload.dto.*;
+import com.renko.repository.BranchRepository;
 import com.renko.repository.InventoryRepository;
 import com.renko.repository.OrderRepository;
 import com.renko.repository.ProductRepository;
@@ -14,6 +15,9 @@ import com.renko.repository.StoreRepository;
 import com.renko.repository.UserRepository;
 import com.renko.service.*;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -38,6 +42,7 @@ public class OrderServiceImpl implements OrderService
     private final SubscriptionService subscriptionService;
     private final StoreAccessService storeAccessService;
     private final AuditLogService auditLogService;
+    private final BranchRepository branchRepository;
 
     @Override
     @Transactional
@@ -113,6 +118,22 @@ public class OrderServiceImpl implements OrderService
                 .paymentType(orderDto.getPaymentType())
                 .build();
 
+        if(orderDto.getBranchId() != null)
+        {
+            BranchEntity branch = branchRepository.findById(orderDto.getBranchId())
+                    .orElseThrow(() -> ExceptionMessages.notFound("Branch", orderDto.getBranchId(), "create order"));
+            if(branch.getStoreEntity() == null || false == store.getId().equals(branch.getStoreEntity().getId()))
+            {
+                throw ExceptionMessages.mismatch(
+                        "Branch does not belong to the cashier's store",
+                        "branchId", branch.getId(),
+                        "branchStoreId", branch.getStoreEntity() != null ? branch.getStoreEntity().getId() : null,
+                        "storeId", store.getId()
+                );
+            }
+            order.setBranchEntity(branch);
+        }
+
         List<OrderItemEntity> orderItems = new java.util.ArrayList<>();
         for(OrderItemDto itemDto : orderDto.getItems())
         {
@@ -151,7 +172,13 @@ public class OrderServiceImpl implements OrderService
             }
 
             double originalPrice = productEntity.getSellingPrice();
-            double discountPercentage = productEntity.getDiscountPercentage();
+            double discountPercentage = itemDto.getDiscountPercent() != null
+                    ? itemDto.getDiscountPercent()
+                    : (productEntity.getDiscountPercentage() != null ? productEntity.getDiscountPercentage() : 0.0);
+            if(discountPercentage < 0 || discountPercentage > 100)
+            {
+                throw new IllegalArgumentException("discountPercent must be between 0 and 100");
+            }
 
             double discountAmount = (originalPrice * discountPercentage) / 100.0;
             double discountedPrice = originalPrice - discountAmount;
@@ -170,11 +197,32 @@ public class OrderServiceImpl implements OrderService
         }
 
         double subtotal = orderItems.stream().mapToDouble(OrderItemEntity::getOriginalPrice).sum();
-        double totalDiscount = orderItems.stream().mapToDouble(OrderItemEntity::getDiscountApplied).sum();
-        double total = orderItems.stream().mapToDouble(OrderItemEntity::getPrice).sum();
+        double lineDiscount = orderItems.stream().mapToDouble(OrderItemEntity::getDiscountApplied).sum();
+        double afterLineDiscount = subtotal - lineDiscount;
+
+        double orderDiscountPercent = orderDto.getOrderDiscountPercent() != null
+                ? orderDto.getOrderDiscountPercent()
+                : 0.0;
+        if(orderDiscountPercent < 0 || orderDiscountPercent > 100)
+        {
+            throw new IllegalArgumentException("orderDiscountPercent must be between 0 and 100");
+        }
+        double orderLevelDiscount = afterLineDiscount * orderDiscountPercent / 100.0;
+        double taxable = afterLineDiscount - orderLevelDiscount;
+
+        double taxRate = orderDto.getTaxRate() != null ? orderDto.getTaxRate() : 0.0;
+        if(taxRate < 0 || taxRate > 100)
+        {
+            throw new IllegalArgumentException("taxRate must be between 0 and 100");
+        }
+        double taxAmount = taxable * taxRate / 100.0;
+        double total = taxable + taxAmount;
 
         order.setSubtotal(subtotal);
-        order.setTotalDiscount(totalDiscount);
+        order.setTotalDiscount(lineDiscount + orderLevelDiscount);
+        order.setOrderDiscountPercent(orderDiscountPercent);
+        order.setTaxRate(taxRate);
+        order.setTaxAmount(taxAmount);
         order.setTotalAmount(total);
         order.setItems(orderItems);
 
@@ -241,7 +289,12 @@ public class OrderServiceImpl implements OrderService
                 "ORDER_CREATE",
                 "Order",
                 String.valueOf(detailed.getId()),
-                "paymentType=" + orderDto.getPaymentType() + "; total=" + detailed.getTotalAmount()
+                "paymentType=" + orderDto.getPaymentType()
+                        + "; total=" + detailed.getTotalAmount()
+                        + "; tax=" + detailed.getTaxAmount()
+                        + "; discount=" + detailed.getTotalDiscount()
+                        + "; branchId=" + (detailed.getBranchEntity() != null ? detailed.getBranchEntity().getId() : null)
+                        + "; customerId=" + (detailed.getCustomerEntity() != null ? detailed.getCustomerEntity().getId() : null)
         );
         return OrderMapper.toDto(detailed);
     }
@@ -335,6 +388,23 @@ public class OrderServiceImpl implements OrderService
                 .filter(order -> paymentType == null || order.getPaymentType() == paymentType)
                 .map(OrderMapper::toDto)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public PageResponse<OrderDto> getOrdersByStorePaged(Long storeId, int page, int size, String q) throws Exception
+    {
+        storeAccessService.requireStoreAccess(storeId);
+        int safePage = Math.max(page, 0);
+        int safeSize = size <= 0 ? 20 : Math.min(size, 100);
+        PageRequest pageable = PageRequest.of(safePage, safeSize, Sort.by(Sort.Direction.DESC, "createdAt"));
+        String query = q == null || q.isBlank() ? null : q.trim();
+        Page<OrderEntity> result = orderRepository.searchByStore(storeId, query, pageable);
+        return PageResponse.of(
+                result.getContent().stream().map(OrderMapper::toDto).collect(Collectors.toList()),
+                result.getNumber(),
+                result.getSize(),
+                result.getTotalElements()
+        );
     }
 
     @Override
@@ -454,6 +524,13 @@ public class OrderServiceImpl implements OrderService
                 .customerName(customerName)
                 .customerPhone(customerPhone)
                 .items(receiptItems)
+                .subtotal(order.getSubtotal())
+                .totalDiscount(order.getTotalDiscount())
+                .taxRate(order.getTaxRate())
+                .taxAmount(order.getTaxAmount())
+                .totalAmount(order.getTotalAmount())
+                .branchName(order.getBranchEntity() != null ? order.getBranchEntity().getName() : null)
+                .paymentType(order.getPaymentType() != null ? order.getPaymentType().name() : null)
                 .build();
     }
 }

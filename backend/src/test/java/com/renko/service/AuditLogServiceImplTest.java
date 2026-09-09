@@ -24,6 +24,9 @@ class AuditLogServiceImplTest
     @Mock
     private StoreAccessService storeAccessService;
 
+    @Mock
+    private UserService userService;
+
     @InjectMocks
     private AuditLogServiceImpl auditLogService;
 

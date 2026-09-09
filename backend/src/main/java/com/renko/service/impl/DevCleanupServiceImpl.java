@@ -4,20 +4,38 @@ import com.renko.service.DevCleanupService;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 
 @Service
 public class DevCleanupServiceImpl implements DevCleanupService
 {
+    private static final Set<String> PRESERVE_TABLES = Set.of(
+            "flyway_schema_history"
+    );
+
+    /**
+     * Hibernate SEQUENCE/TABLE generators (GenerationType.AUTO on MySQL) use a pooled
+     * optimizer with allocation size 50. Seeding next_val=1 makes the first "high" value 1,
+     * so IDs start around -49. Seed the high value to the allocation size instead.
+     */
+    private static final long HIBERNATE_SEQUENCE_INITIAL_HIGH = 50L;
+
     @PersistenceContext
     private EntityManager entityManager;
 
+    /**
+     * Must run and commit in its own transaction. Truncating sequence tables inside
+     * the same open Hibernate transaction that later allocates IDs causes lock waits
+     * ("Error performing isolated work").
+     */
     @Override
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public List<String> clearAllTables()
     {
         entityManager.flush();
@@ -39,6 +57,10 @@ public class DevCleanupServiceImpl implements DevCleanupService
             {
                 continue;
             }
+            if (PRESERVE_TABLES.contains(table.toLowerCase(Locale.ROOT)))
+            {
+                continue;
+            }
 
             entityManager.createNativeQuery("TRUNCATE TABLE `" + table + "`").executeUpdate();
             truncated.add(table);
@@ -49,11 +71,11 @@ public class DevCleanupServiceImpl implements DevCleanupService
             }
         }
 
-        // Hibernate TABLE generators need a next_val row; TRUNCATE leaves *_seq empty.
+        // Keep *_seq rows valid if any AUTO/sequence generators remain.
         for (String sequenceTable : sequenceTables)
         {
             entityManager.createNativeQuery(
-                    "INSERT INTO `" + sequenceTable + "` (next_val) VALUES (1)"
+                    "INSERT INTO `" + sequenceTable + "` (next_val) VALUES (" + HIBERNATE_SEQUENCE_INITIAL_HIGH + ")"
             ).executeUpdate();
         }
 

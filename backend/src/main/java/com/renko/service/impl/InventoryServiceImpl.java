@@ -216,13 +216,16 @@ public class InventoryServiceImpl implements InventoryService
             storeAccessService.requireStoreAccess(inventoryEntity.getStoreEntity().getId());
         }
 
+        int previous = inventoryEntity.getQuantity();
         inventoryEntity.setQuantity(inventoryEntity.getQuantity() + quantity);
         InventoryEntity updatedInventory = inventoryRepository.save(inventoryEntity);
-        auditLogService.record(
+        auditLogService.recordChange(
                 inventoryEntity.getStoreEntity() != null ? inventoryEntity.getStoreEntity().getId() : null,
                 "INVENTORY_ADD",
                 "Inventory",
                 String.valueOf(id),
+                "qty=" + previous,
+                "qty=" + updatedInventory.getQuantity(),
                 "Added quantity=" + quantity
         );
 
@@ -258,13 +261,16 @@ public class InventoryServiceImpl implements InventoryService
             );
         }
 
+        int previous = inventoryEntity.getQuantity();
         inventoryEntity.setQuantity(next);
         InventoryEntity saved = inventoryRepository.save(inventoryEntity);
-        auditLogService.record(
+        auditLogService.recordChange(
                 inventoryEntity.getStoreEntity() != null ? inventoryEntity.getStoreEntity().getId() : null,
                 "INVENTORY_ADJUST",
                 "Inventory",
                 String.valueOf(id),
+                "qty=" + previous,
+                "qty=" + next,
                 "delta=" + delta + (reason != null ? "; reason=" + reason : "")
         );
         return InventoryMapper.toDto(saved);

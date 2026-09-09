@@ -16,6 +16,7 @@ export type Product = {
   imageUrl?: string
   maxRetailPrice?: number
   sellingPrice: number
+  discountPercentage?: number
   categoryId?: number | null
   storeId?: number
 }
@@ -54,6 +55,7 @@ export type OrderItem = {
   price?: number
   originalPrice?: number
   discountApplied?: number
+  discountPercent?: number
   orderId?: number
 }
 
@@ -62,8 +64,12 @@ export type Order = {
   totalAmount?: number
   subtotal?: number
   totalDiscount?: number
+  taxRate?: number
+  taxAmount?: number
+  orderDiscountPercent?: number
   createdAt?: string
   storeId?: number
+  branchId?: number | null
   customerId?: number | null
   cashierId?: number | null
   customerName?: string
@@ -94,6 +100,13 @@ export type Receipt = {
   customerName?: string
   customerPhone?: string
   items?: ReceiptItem[]
+  subtotal?: number
+  totalDiscount?: number
+  taxRate?: number
+  taxAmount?: number
+  totalAmount?: number
+  branchName?: string
+  paymentType?: string
 }
 
 export type ShiftReport = {
@@ -106,7 +119,30 @@ export type ShiftReport = {
   totalOrders?: number
   cashierId?: number
   storeId?: number
+  branchId?: number | null
   recentOrderIds?: number[]
+}
+
+export type Refund = {
+  id: number
+  orderId: number
+  reason?: string
+  amount?: number
+  shiftReportId?: number | null
+  cashierId?: number | null
+  cashierName?: string
+  storeId?: number | null
+  paymentType?: string
+  createdAt?: string
+  updatedAt?: string
+}
+
+export type PageResponse<T> = {
+  content: T[]
+  page: number
+  size: number
+  totalElements: number
+  totalPages: number
 }
 
 export type Store = {
@@ -148,5 +184,7 @@ export type AuditLog = {
   entityType: string
   entityId?: string
   details?: string
+  beforeState?: string
+  afterState?: string
   createdAt?: string
 }

@@ -33,6 +33,12 @@ public class AuditLogEntity
     @Column(length = 2000)
     private String details;
 
+    @Column(length = 2000)
+    private String beforeState;
+
+    @Column(length = 2000)
+    private String afterState;
+
     private LocalDateTime createdAt;
 
     @PrePersist

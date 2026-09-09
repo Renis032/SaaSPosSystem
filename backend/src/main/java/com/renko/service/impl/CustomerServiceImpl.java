@@ -4,6 +4,7 @@ import com.renko.entities.CustomerEntity;
 import com.renko.entities.StoreEntity;
 import com.renko.exceptions.ExceptionMessages;
 import com.renko.exceptions.UserException;
+import com.renko.payload.dto.PageResponse;
 import com.renko.payload.dto.UserDto;
 import com.renko.repository.CustomerRepository;
 import com.renko.repository.StoreRepository;
@@ -11,6 +12,9 @@ import com.renko.service.CustomerService;
 import com.renko.service.StoreAccessService;
 import com.renko.service.UserService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -97,6 +101,18 @@ public class CustomerServiceImpl implements CustomerService
     {
         storeAccessService.requireStoreAccess(id);
         return customerRepository.findByStoreEntity_Id(id);
+    }
+
+    @Override
+    public PageResponse<CustomerEntity> getCustomersByStorePaged(Long storeId, int page, int size, String q) throws Exception
+    {
+        storeAccessService.requireStoreAccess(storeId);
+        int safePage = Math.max(page, 0);
+        int safeSize = size <= 0 ? 20 : Math.min(size, 100);
+        PageRequest pageable = PageRequest.of(safePage, safeSize, Sort.by(Sort.Direction.ASC, "fullName"));
+        String query = q == null || q.isBlank() ? null : q.trim();
+        Page<CustomerEntity> result = customerRepository.searchByStore(storeId, query, pageable);
+        return PageResponse.of(result.getContent(), result.getNumber(), result.getSize(), result.getTotalElements());
     }
 
     @Override

@@ -58,8 +58,16 @@ public class CustomerController
     }
 
     @GetMapping("/store/{storeId}")
-    public ResponseEntity<List<CustomerEntity>> getCustomersByStore(@PathVariable Long storeId) throws Exception
+    public ResponseEntity<?> getCustomersByStore(@PathVariable Long storeId,
+                                                 @RequestParam(required = false) Integer page,
+                                                 @RequestParam(required = false) Integer size,
+                                                 @RequestParam(required = false) String q) throws Exception
     {
+        if(page != null)
+        {
+            return ResponseEntity.ok(customerService.getCustomersByStorePaged(
+                    storeId, page, size != null ? size : 20, q));
+        }
         return ResponseEntity.ok(customerService.getCustomersByStoreEntity_Id(storeId));
     }
 

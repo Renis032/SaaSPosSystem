@@ -1,6 +1,7 @@
 package com.renko.service;
 
 import com.renko.entities.CustomerEntity;
+import com.renko.payload.dto.PageResponse;
 
 import java.util.List;
 
@@ -12,6 +13,7 @@ public interface CustomerService
     CustomerEntity getCustomer(Long id) throws Exception;
     List<CustomerEntity> getAllCustomers();
     List<CustomerEntity> getCustomersByStoreEntity_Id(Long id) throws Exception;
+    PageResponse<CustomerEntity> getCustomersByStorePaged(Long storeId, int page, int size, String q) throws Exception;
     List<CustomerEntity> searchCustomer(String keyword);
     void deleteAllCustomers();
 }
